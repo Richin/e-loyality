@@ -1,5 +1,14 @@
+
+'use client';
+
 import React from 'react';
+import Box from '@mui/material/Box';
+import AppBar from '@mui/material/AppBar';
+import Toolbar from '@mui/material/Toolbar';
+import Typography from '@mui/material/Typography';
+import Sidebar from '@/components/admin/Sidebar';
 import Link from 'next/link';
+import Button from '@mui/material/Button';
 
 export default function AdminLayout({
     children,
@@ -7,43 +16,23 @@ export default function AdminLayout({
     children: React.ReactNode;
 }) {
     return (
-        <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-            <header style={{ background: '#1e293b', padding: '1rem 0', color: 'white' }}>
-                <div style={{
-                    maxWidth: '1200px', margin: '0 auto', padding: '0 2rem',
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-                }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-                        <Link href="/admin/dashboard" style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'white', textDecoration: 'none' }}>
-                            Admin Console
-                        </Link>
-                        <nav style={{ display: 'flex', gap: '1.5rem' }}>
-                            <Link href="/admin/dashboard" style={{ color: '#e2e8f0', textDecoration: 'none' }}>Dashboard</Link>
-                            <Link href="/admin/customers" style={{ color: '#e2e8f0', textDecoration: 'none' }}>Customers</Link>
-                            <Link href="/admin/reports" style={{ color: '#e2e8f0', textDecoration: 'none' }}>Reports</Link>
-                            <Link href="/admin/configuration" style={{ color: '#e2e8f0', textDecoration: 'none' }}>Configuration</Link>
-                            <Link href="/admin/rewards" style={{ color: '#e2e8f0', textDecoration: 'none' }}>Rewards</Link>
-                            <Link href="/admin/redemptions" style={{ color: '#e2e8f0', textDecoration: 'none' }}>Redemptions</Link>
-                            <Link href="/admin/marketing" style={{ color: '#e2e8f0', textDecoration: 'none' }}>Marketing</Link>
-                            <Link href="/admin/stores" style={{ color: '#e2e8f0', textDecoration: 'none' }}>Stores</Link>
-                            <Link href="/admin/transactions" style={{ color: '#e2e8f0', textDecoration: 'none' }}>Transactions</Link>
-                            <Link href="/admin/insights" style={{ color: '#38bdf8', textDecoration: 'none', fontWeight: 'bold' }}>Insights ✨</Link>
-                            <Link href="/admin/finance" style={{ color: '#e2e8f0', textDecoration: 'none', fontWeight: 'bold' }}>Finance 💰</Link>
-                            <Link href="/admin/security" style={{ color: '#ef4444', textDecoration: 'none', fontWeight: 'bold' }}>Security 🛡️</Link>
-                            <Link href="/admin/communications" style={{ color: '#e2e8f0', textDecoration: 'none' }}>Communications</Link>
-                        </nav>
-                    </div>
-                    <div>
-                        <Link href="/dashboard" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: '0.9rem' }}>
-                            Exit to App &rarr;
-                        </Link>
-                    </div>
-                </div>
-            </header>
+        <Box sx={{ display: 'flex' }}>
+            <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
+                <Toolbar>
+                    <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
+                        Admin Portal
+                    </Typography>
+                    <Button color="inherit" component={Link} href="/dashboard">
+                        Exit to App
+                    </Button>
+                </Toolbar>
+            </AppBar>
 
-            <main style={{ flex: 1, background: '#f8fafc' }}>
+            <Sidebar />
+
+            <Box component="main" sx={{ flexGrow: 1, p: 3, marginTop: '64px' }}> // Toolbar height offset
                 {children}
-            </main>
-        </div>
+            </Box>
+        </Box>
     );
 }
