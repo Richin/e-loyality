@@ -102,6 +102,16 @@ model Reward {
   terms       String? @db.Text
   isActive    Boolean @default(true)
 
+  // Phase 4: Enhanced Controls
+  inventory    Int?      // Null = Unlimited
+  limitPerUser Int?      // Null = Unlimited
+  startDate    DateTime?
+  endDate      DateTime?
+  
+  // Voucher Settings
+  autoApprove   Boolean @default(true)
+  voucherPrefix String? // e.g., "GIFT-"
+
   redemptions Redemption[]
 
   createdAt DateTime @default(now())
@@ -115,12 +125,16 @@ model Redemption {
   rewardId        String
   reward          Reward        @relation(fields: [rewardId], references: [id])
 
-  status String @default("PENDING") // PENDING, FULFILLED, CANCELLED
+  status String @default("PENDING") // PENDING, APPROVED, FULFILLED, REJECTED, CANCELLED
 
   // Phase 4: Voucher Lifecycle
   code      String?   @unique // Voucher Code
   expiresAt DateTime?
   usedAt    DateTime?
+
+  // Approval Workflow
+  approvedBy String?
+  approvedAt DateTime?
 
   // Gifting
   isGift             Boolean @default(false)
