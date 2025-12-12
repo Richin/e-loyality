@@ -30,7 +30,7 @@ export default function AdminReportsPage() {
 
             {/* TAB NAVIGATION */}
             <div style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid #e2e8f0', marginBottom: '2rem', overflowX: 'auto' }}>
-                {['overview', 'points_health', 'tier_analysis', 'rewards'].map(tab => (
+                {['overview', 'points_health', 'tier_analysis', 'rewards', 'marketing', 'stores'].map(tab => (
                     <button key={tab} onClick={() => setActiveTab(tab)} style={{
                         padding: '0.75rem 1.5rem', background: 'none', border: 'none',
                         borderBottom: activeTab === tab ? '2px solid #2563eb' : 'none',
@@ -259,6 +259,110 @@ export default function AdminReportsPage() {
                             </div>
                         )}
                     </Card>
+                </div>
+            )}
+            {/* --- TAB 5: MARKETING & ROI --- */}
+            {activeTab === 'marketing' && (
+                <div style={{ display: 'grid', gap: '2rem' }}>
+                    {/* Campaign ROI Table */}
+                    <Card title="Campaign Performance & ROI (7-Day Attribution)">
+                        <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
+                            <thead>
+                                <tr style={{ borderBottom: '2px solid #eee', color: '#64748b' }}>
+                                    <th style={{ padding: '0.5rem' }}>Campaign</th>
+                                    <th style={{ padding: '0.5rem' }}>Sent</th>
+                                    <th style={{ padding: '0.5rem' }}>Conversions</th>
+                                    <th style={{ padding: '0.5rem' }}>Conv. Rate</th>
+                                    <th style={{ padding: '0.5rem' }}>Revenue</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {/* @ts-ignore */}
+                                {data.campaignsStats?.map((c: any) => (
+                                    <tr key={c.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                        <td style={{ padding: '0.75rem 0.5rem', fontWeight: 'bold' }}>{c.name}</td>
+                                        <td style={{ padding: '0.75rem 0.5rem' }}>{c.sentCount}</td>
+                                        <td style={{ padding: '0.75rem 0.5rem' }}>{c.conversions}</td>
+                                        <td style={{ padding: '0.75rem 0.5rem' }}>
+                                            {c.sentCount > 0 ? ((c.conversions / c.sentCount) * 100).toFixed(1) : 0}%
+                                        </td>
+                                        <td style={{ padding: '0.75rem 0.5rem', color: '#16a34a', fontWeight: 'bold' }}>
+                                            ${c.revenue.toLocaleString()}
+                                        </td>
+                                    </tr>
+                                ))}
+                                {(!data.campaignsStats || data.campaignsStats.length === 0) && <tr><td colSpan={5} style={{ padding: '1rem', textAlign: 'center', color: '#888' }}>No sent campaigns yet.</td></tr>}
+                            </tbody>
+                        </table>
+                    </Card>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
+                        {/* Promo Codes */}
+                        <Card title="Top Promo Codes">
+                            {/* @ts-ignore */}
+                            {data.promoStats?.map((p: any, i: number) => (
+                                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid #eee' }}>
+                                    <div>
+                                        <span style={{ fontWeight: 'bold', display: 'block' }}>{p.code}</span>
+                                        <span style={{ fontSize: '0.8rem', color: '#666' }}>{p.type}</span>
+                                    </div>
+                                    <div style={{ textAlign: 'right' }}>
+                                        <span style={{ display: 'block', fontSize: '1.2rem', fontWeight: 'bold', color: '#2563eb' }}>{p.usedCount}</span>
+                                        <span style={{ fontSize: '0.8rem', color: '#999' }}>uses</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </Card>
+
+                        {/* Channel Split */}
+                        <Card title="Channel Engagement">
+                            {/* @ts-ignore */}
+                            {data.channelStats?.map((ch: any, i: number) => (
+                                <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: ch.channel === 'EMAIL' ? '#3b82f6' : '#10b981' }}></div>
+                                        <span>{ch.channel}</span>
+                                    </div>
+                                    <strong>{ch._count.id} messages</strong>
+                                </div>
+                            ))}
+                            {(!data.channelStats || data.channelStats.length === 0) && <div style={{ color: '#aaa' }}>No messages sent.</div>}
+                        </Card>
+                    </div>
+                </div>
+            )}
+            {/* --- TAB 6: STORE PERFORMANCE --- */}
+            {activeTab === 'stores' && (
+                <div style={{ display: 'grid', gap: '2rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
+                        <Card title="Refunds & Reversals">
+                            <div style={{ padding: '1rem', textAlign: 'center' }}>
+                                <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#ef4444' }}>{data.refundsCount || 0}</div>
+                                <div style={{ color: '#666' }}>Return Transactions Processed</div>
+                            </div>
+                        </Card>
+
+                        <Card title="Store Leaderboard (Revenue)">
+                            <div style={{ marginTop: '1rem' }}>
+                                {/* @ts-ignore */}
+                                {data.storePerformance?.sort((a, b) => b.revenue - a.revenue).map((s: any, i: number) => (
+                                    <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', borderBottom: '1px solid #eee', paddingBottom: '0.5rem' }}>
+                                        <div>
+                                            <div style={{ fontWeight: 'bold' }}>{i + 1}. {s.name}</div>
+                                            <div style={{ fontSize: '0.8rem', color: s.posStatus === 'ONLINE' ? '#16a34a' : '#dc2626' }}>
+                                                {s.posStatus}
+                                            </div>
+                                        </div>
+                                        <div style={{ textAlign: 'right' }}>
+                                            <div style={{ fontWeight: 'bold', color: '#16a34a' }}>${s.revenue.toLocaleString()}</div>
+                                            <div style={{ fontSize: '0.8rem', color: '#666' }}>{s.pointsIssued.toLocaleString()} pts</div>
+                                        </div>
+                                    </div>
+                                ))}
+                                {(!data.storePerformance || data.storePerformance.length === 0) && <div style={{ color: '#888' }}>No store data available.</div>}
+                            </div>
+                        </Card>
+                    </div>
                 </div>
             )}
         </div>

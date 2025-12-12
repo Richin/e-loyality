@@ -73,6 +73,24 @@ model MemberProfile {
   updatedAt DateTime @updatedAt
 }
 
+model CommunicationLog {
+  id              String        @id @default(cuid())
+  campaignId      String?
+  campaign        Campaign?     @relation(fields: [campaignId], references: [id])
+  
+  recipientUserId String?       // If registered user
+  recipientContact String       // Email or Phone
+  channel         String        // EMAIL, SMS, PUSH
+  status          String        // SENT, DELIVERED, FAILED, OPENED, CLICKED
+  
+  // Phase 7: Tracking
+  openedAt        DateTime?
+  clickedAt       DateTime?
+  templateId      String?
+  
+  sentAt          DateTime      @default(now())
+}
+
 model LoyaltyTransaction {
   id              String        @id @default(cuid())
   memberProfileId String
@@ -87,8 +105,41 @@ model LoyaltyTransaction {
   orderId      String?
   cashbackUsed Float   @default(0.0)
   source       String? // POS, ONLINE, MANUAL
+  
+  // Phase 6: POS Integration
+  storeId      String?
+  store        Store?  @relation(fields: [storeId], references: [id])
+  isOfflineSync Boolean @default(false)
 
   createdAt DateTime @default(now())
+}
+// ... (skip models)
+model Store {
+  id          String   @id @default(cuid())
+  name        String
+  address     String
+  city        String
+  postalCode  String
+  
+  latitude    Float
+  longitude   Float
+  
+  phone       String?
+  email       String?
+  openingHours String? // Text description e.g. "Mon-Fri: 9am-9pm"
+  
+  imageUrl    String?
+  
+  isActive    Boolean  @default(true)
+  
+  // Phase 6: POS Monitoring
+  lastSyncAt  DateTime?
+  posStatus   String    @default("OFFLINE") // OFFLINE, ONLINE, MAINTENANCE
+
+  transactions LoyaltyTransaction[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Reward {
@@ -365,26 +416,7 @@ model Notification {
   createdAt       DateTime      @default(now())
 }
 
-model Store {
-  id          String   @id @default(cuid())
-  name        String
-  address     String
-  city        String
-  postalCode  String
-  
-  latitude    Float
-  longitude   Float
-  
-  phone       String?
-  email       String?
-  openingHours String? // Text description e.g. "Mon-Fri: 9am-9pm"
-  
-  imageUrl    String?
-  
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
+
 
 model AuditLog {
   id        String   @id @default(cuid())

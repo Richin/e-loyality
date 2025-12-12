@@ -93,7 +93,8 @@ export async function POST(req: Request) {
                 data: {
                     userId: newUser.id,
                     phone: phone || null,
-                    currentTierId: bronzeTier ? bronzeTier.id : undefined,
+                    // currentTierId: bronzeTier ? bronzeTier.id : undefined, 
+                    currentTier: bronzeTier?.id ? { connect: { id: bronzeTier.id } } : undefined,
                     pointsBalance: 0,
                     referralCode: referralCode,
                     referredById: referredById
@@ -102,6 +103,14 @@ export async function POST(req: Request) {
 
             return newUser;
         });
+
+
+        // Trigger "SIGNUP" Event for Marketing
+        // We use setImmediate or just fire-and-forget to not block the response
+        try {
+            const { triggerEvent } = await import('@/lib/marketing');
+            triggerEvent('SIGNUP', user.id).catch(console.error);
+        } catch (e) { console.error('Trigger Error', e); }
 
         return NextResponse.json(
             { message: 'User created successfully', userId: user.id },
