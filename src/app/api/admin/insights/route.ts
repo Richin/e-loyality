@@ -23,7 +23,7 @@ export async function GET() {
         const dayDistribution = { Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0, Sun: 0 };
         const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-        recentTx.forEach(tx => {
+        recentTx.forEach((tx: any) => {
             const date = new Date(tx.createdAt);
             const hour = date.getHours();
             hourDistribution[hour]++;
@@ -41,7 +41,7 @@ export async function GET() {
         });
 
         const trendsMap = new Map();
-        trendsRaw.forEach(tx => {
+        trendsRaw.forEach((tx: any) => {
             const day = format(new Date(tx.createdAt), 'MM/dd');
             if (!trendsMap.has(day)) trendsMap.set(day, { date: day, earn: 0, redeem: 0, amount: 0 });
             const entry = trendsMap.get(day);
@@ -55,13 +55,24 @@ export async function GET() {
         const trends = Array.from(trendsMap.values());
 
         // 3. Funnel Analysis
-        const totalUsers = await prisma.user.count({ where: { role: 'USER' } });
-        const profilesRaw = await prisma.memberProfile.findMany({
-            select: { _count: { select: { transactions: { where: { type: 'EARN' } } } } }
+        // Fix: Use correct relation syntax + fallback for no role (regular user)
+        const totalUsers = await prisma.user.count({
+            where: {
+                OR: [
+                    { role: { name: 'USER' } },
+                    { roleId: null }
+                ]
+            }
+        });
+        // Optimized Funnel (groupBy is faster and avoids nested select crash)
+        const userTransactionCounts = await prisma.loyaltyTransaction.groupBy({
+            by: ['memberProfileId'],
+            where: { type: 'EARN' },
+            _count: { id: true }
         });
 
-        const activeUsers = profilesRaw.filter(p => p._count.transactions > 0).length;
-        const loyalUsers = profilesRaw.filter(p => p._count.transactions > 1).length; // >1 purchase
+        const activeUsers = userTransactionCounts.length; // Users with >= 1 transaction
+        const loyalUsers = userTransactionCounts.filter(u => u._count.id > 1).length; // Users with > 1 transaction
 
         // 4. RFM & Churn Prediction (Simplified)
         // In a real app, this would be a complex model. Here we segment by "Days since last visit".

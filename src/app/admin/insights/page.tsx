@@ -20,6 +20,7 @@ export default function AdminInsightsPage() {
 
     if (loading) return <div style={{ padding: '2rem' }}>Loading Insights...</div>;
     if (!data) return <div style={{ padding: '2rem' }}>Error loading data.</div>;
+    if (data.error) return <div style={{ padding: '2rem', color: 'red' }}>Error: {data.error}</div>;
 
     const COLORS = ['#10b981', '#ef4444', '#f59e0b', '#3b82f6'];
 
