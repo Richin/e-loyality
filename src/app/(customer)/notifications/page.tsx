@@ -1,66 +1,62 @@
-'use client';
-
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { getServerSession } from 'next-auth';
+import { redirect } from 'next/navigation';
+import prisma from '@/lib/prisma';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { Card } from '@/components/ui/Card';
 
-interface Notification {
-    id: string;
-    title: string;
-    message: string;
-    date: string;
-    type: string;
-}
+export default async function NotificationsPage() {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user?.email) return redirect('/auth/signin');
 
-export default function NotificationsPage() {
-    const [notifications, setNotifications] = useState<Notification[]>([]);
-    const [loading, setLoading] = useState(true);
+    const user = await prisma.user.findUnique({
+        where: { email: session.user.email },
+        include: {
+            memberProfile: {
+                include: {
+                    notifications: {
+                        orderBy: { createdAt: 'desc' }
+                    }
+                }
+            }
+        }
+    });
 
-    useEffect(() => {
-        fetch('/api/notifications')
-            .then(res => res.json())
-            .then(data => {
-                if (Array.isArray(data)) setNotifications(data);
-                setLoading(false);
-            })
-            .catch(err => setLoading(false));
-    }, []);
+    if (!user || !user.memberProfile) return <div>Profile not found</div>;
+
+    const notifications = user.memberProfile.notifications;
 
     return (
-        <div style={{ maxWidth: '800px', margin: '2rem auto', padding: '0 1rem' }}>
-            <h1 style={{ marginBottom: '1.5rem' }}>Inbox</h1>
+        <div className="container" style={{ padding: '2rem 1rem' }}>
+            <h1 style={{ fontSize: '1.8rem', fontWeight: 'bold', marginBottom: '1.5rem' }}>Notifications</h1>
 
-            {loading ? (
-                <p>Loading messages...</p>
-            ) : notifications.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '3rem', color: '#666' }}>
-                    <p>No new notifications.</p>
-                </div>
+            {notifications.length === 0 ? (
+                <Card><p style={{ textAlign: 'center', color: '#666', padding: '2rem' }}>No notifications yet.</p></Card>
             ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    {notifications.map((notif) => (
-                        <div key={notif.id} style={{
-                            background: '#fff',
-                            padding: '1.5rem',
-                            borderRadius: '12px',
-                            boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-                            borderLeft: `4px solid ${notif.type === 'EMAIL' ? '#007bff' : '#28a745'}`
+                    {notifications.map(note => (
+                        <Card key={note.id} style={{
+                            borderLeft: note.isRead ? 'none' : '4px solid #2563eb',
+                            background: note.isRead ? '#fff' : '#f0f9ff'
                         }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                <div style={{ fontWeight: 'bold' }}>{note.title}</div>
+                                <div style={{ fontSize: '0.8rem', color: '#666' }}>{new Date(note.createdAt).toLocaleDateString()}</div>
+                            </div>
+                            <p style={{ color: '#444' }}>{note.message}</p>
+                            <div style={{ marginTop: '0.5rem' }}>
                                 <span style={{
-                                    fontSize: '0.8rem',
-                                    textTransform: 'uppercase',
+                                    fontSize: '0.75rem',
+                                    padding: '2px 6px',
+                                    background: '#eee',
+                                    borderRadius: '4px',
                                     fontWeight: 'bold',
-                                    color: notif.type === 'EMAIL' ? '#007bff' : '#28a745'
+                                    color: '#666'
                                 }}>
-                                    {notif.type}
-                                </span>
-                                <span style={{ fontSize: '0.85rem', color: '#999' }}>
-                                    {new Date(notif.date).toLocaleDateString()}
+                                    {note.type}
                                 </span>
                             </div>
-                            <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem' }}>{notif.title}</h3>
-                            <p style={{ margin: 0, color: '#555', lineHeight: '1.5' }}>{notif.message}</p>
-                        </div>
+                        </Card>
                     ))}
                 </div>
             )}

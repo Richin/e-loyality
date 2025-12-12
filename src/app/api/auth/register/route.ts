@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import prisma from '@/lib/prisma';
+import { notifyPointsEarned } from '@/lib/notifications';
 
 export async function POST(req: Request) {
     try {
@@ -50,12 +51,52 @@ export async function POST(req: Request) {
             // WAIT: The schema needs a password field for Credential login if we aren't using an external provider.
             // I will update the schema in the next step. For now, let's pretend it exists or add it.
 
+            // Ensure Bronze tier exists or fetch it
+            const bronzeTier = await prisma.tier.findUnique({
+                where: { name: 'Bronze' }
+            });
+
+            // Generate Unique Referral Code
+            const referralCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+
+            // Handle Referral Logic
+            let referredById = undefined;
+            if (body.referralCode) {
+                const referrer = await tx.memberProfile.findUnique({
+                    where: { referralCode: body.referralCode }
+                });
+
+                if (referrer) {
+                    referredById = referrer.id;
+
+                    // Award Bonus to Referrer (e.g. 500 points)
+                    await tx.memberProfile.update({
+                        where: { id: referrer.id },
+                        data: { pointsBalance: { increment: 500 } }
+                    });
+
+                    await tx.loyaltyTransaction.create({
+                        data: {
+                            memberProfileId: referrer.id,
+                            type: 'REFERRAL_BONUS',
+                            points: 500,
+                            description: `Referral Bonus for new user: ${name}`
+                        }
+                    });
+
+                    // Send Notification
+                    await notifyPointsEarned(referrer.id, 500, `Referral Bonus: ${name}`);
+                }
+            }
+
             await tx.memberProfile.create({
                 data: {
                     userId: newUser.id,
                     phone: phone || null,
-                    currentTier: 'BRONZE',
+                    currentTierId: bronzeTier ? bronzeTier.id : undefined,
                     pointsBalance: 0,
+                    referralCode: referralCode,
+                    referredById: referredById
                 },
             });
 

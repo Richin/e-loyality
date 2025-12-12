@@ -1,32 +1,34 @@
 import React from 'react';
 import Link from 'next/link';
-import { Button } from '@/components/ui/Button';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import AuthButtons from '@/components/AuthButtons';
 import styles from './CustomerLayout.module.css';
 
-export default function CustomerLayout({
+export default async function CustomerLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
+    const session = await getServerSession(authOptions);
+
     return (
         <div className={styles.wrapper}>
             <header className={styles.header}>
                 <div className={`container ${styles.navContainer}`}>
-                    <Link href="/" className={styles.logo}>
+                    <Link href="/dashboard" className={styles.logo}>
                         E-Loyalty
                     </Link>
                     <nav className={styles.nav}>
                         <Link href="/catalog">Rewards</Link>
                         <Link href="/promotions">Deals</Link>
+                        <Link href="/achievements">Achievements</Link>
+                        <Link href="/referrals">Referrals</Link>
+                        <Link href="/support">Support</Link>
+                        <Link href="/notifications">Alerts</Link>
                     </nav>
-                    <div className={styles.auth}>
-                        <Link href="/auth/signin">
-                            <Button variant="ghost" size="sm">Log In</Button>
-                        </Link>
-                        <Link href="/auth/register">
-                            <Button size="sm">Join Now</Button>
-                        </Link>
-                    </div>
+
+                    <AuthButtons session={session} />
                 </div>
             </header>
 

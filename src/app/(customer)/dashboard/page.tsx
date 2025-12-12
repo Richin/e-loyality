@@ -28,7 +28,11 @@ export default async function DashboardPage() {
     if (session.user.email) {
         user = await prisma.user.findUnique({
             where: { email: session.user.email },
-            include: { memberProfile: true }
+            include: {
+                memberProfile: {
+                    include: { tier: true }
+                }
+            }
         });
     }
 
@@ -48,6 +52,14 @@ export default async function DashboardPage() {
         )
     }
 
+    // Calculate Tier Progress
+    const nextTier = user.role === 'ADMIN' ? null : ( // Simplified check
+        profile.pointsBalance < 1000 ? { name: 'Silver', threshold: 1000 } :
+            profile.pointsBalance < 5000 ? { name: 'Gold', threshold: 5000 } : null
+    );
+
+    const progress = nextTier ? Math.min((profile.pointsBalance / nextTier.threshold) * 100, 100) : 100;
+
     return (
         <div className={styles.container}>
             <header className={styles.header}>
@@ -59,16 +71,44 @@ export default async function DashboardPage() {
             <DigitalCard
                 name={user.name || 'Valued Member'}
                 memberId={profile.id}
-                tier={profile.currentTier}
+                tier={profile.tier?.name || 'Bronze'}
                 points={profile.pointsBalance}
             />
+
+            {/* Tier Progress */}
+            {nextTier && (
+                <div style={{ marginBottom: '2rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
+                        <span>Progress to {nextTier.name}</span>
+                        <span>{profile.pointsBalance} / {nextTier.threshold} pts</span>
+                    </div>
+                    <div style={{ width: '100%', height: '8px', background: '#eee', borderRadius: '4px', overflow: 'hidden' }}>
+                        <div style={{ width: `${progress}%`, height: '100%', background: '#3498db', transition: 'width 0.3s ease' }} />
+                    </div>
+                </div>
+            )}
 
             <h2 style={{ marginBottom: '1rem' }}>My Wallet</h2>
             <div className={styles.grid} style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', marginBottom: '2rem' }}>
                 {/* Points Card */}
-                <Card title="Points">
+                <Card title="Points Balance">
                     <div className={styles.pointsValue}>
                         {profile.pointsBalance} <span className={styles.pointsLabel}>pts</span>
+                    </div>
+                    <div style={{ marginTop: '1rem', borderTop: '1px solid #eee', paddingTop: '0.5rem', fontSize: '0.85rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                            <span style={{ color: '#f39c12' }}>Pending:</span>
+                            <span>{profile.pendingPoints}</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                            <span style={{ color: '#e74c3c' }}>Expired:</span>
+                            <span>{profile.expiredPoints}</span>
+                        </div>
+                        {profile.pointsExpiryDate && (
+                            <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: '#7f8c8d' }}>
+                                Next expiry: {new Date(profile.pointsExpiryDate).toLocaleDateString()}
+                            </div>
+                        )}
                     </div>
                 </Card>
 
@@ -98,9 +138,6 @@ export default async function DashboardPage() {
                         <Link href="/catalog" style={{ width: '100%' }}>
                             <Button fullWidth>Redeem Rewards</Button>
                         </Link>
-                        <Link href="/profile" style={{ width: '100%' }}>
-                            <Button variant="outline" fullWidth>My Profile</Button>
-                        </Link>
                         <Link href="/referrals" style={{ width: '100%' }}>
                             <Button variant="outline" fullWidth>Refer & Earn</Button>
                         </Link>
@@ -110,11 +147,26 @@ export default async function DashboardPage() {
                     </div>
                 </Card>
 
-                {/* Recent Activity Placeholder */}
+                {/* Recent Activity */}
                 <Card title="Recent Activity" className={styles.wideCard}>
                     <div className={styles.emptyState}>
-                        <p>Check your recent transactions and point earnings.</p>
-                        <Link href="/history"><Button variant="ghost" size="sm">View Full History</Button></Link>
+                        <div style={{ width: '100%', textAlign: 'left' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                                <tbody>
+                                    <tr>
+                                        <td style={{ padding: '0.5rem 0', borderBottom: '1px solid #eee' }}>Initial Bonus</td>
+                                        <td style={{ padding: '0.5rem 0', borderBottom: '1px solid #eee', textAlign: 'right', color: '#27ae60' }}>+100 pts</td>
+                                    </tr>
+                                    <tr>
+                                        <td style={{ padding: '0.5rem 0', borderBottom: '1px solid #eee' }}>Welcome Gift</td>
+                                        <td style={{ padding: '0.5rem 0', borderBottom: '1px solid #eee', textAlign: 'right', color: '#27ae60' }}>+50 pts</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div style={{ marginTop: '1rem', textAlign: 'center' }}>
+                                <Link href="/history"><Button variant="ghost" size="sm">View Full History</Button></Link>
+                            </div>
+                        </div>
                     </div>
                 </Card>
             </div>
