@@ -1,0 +1,8 @@
+-- AlterTable
+ALTER TABLE `redemption` ADD COLUMN `giftRecipientEmail` VARCHAR(191) NULL,
+    ADD COLUMN `isGift` BOOLEAN NOT NULL DEFAULT false;
+
+-- AlterTable
+ALTER TABLE `reward` ADD COLUMN `category` VARCHAR(191) NOT NULL DEFAULT 'OTHER',
+    ADD COLUMN `terms` TEXT NULL,
+    ADD COLUMN `type` VARCHAR(191) NOT NULL DEFAULT 'DIGITAL';

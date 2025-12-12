@@ -1,44 +1,36 @@
 import React from 'react';
 import Link from 'next/link';
-import { Button } from '@/components/ui/Button';
-import styles from './CustomerLayout.module.css';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import CustomerHeader from '@/components/customer/CustomerHeader';
+import Box from '@mui/material/Box';
+import Container from '@mui/material/Container';
+import Typography from '@mui/material/Typography';
 
-export default function CustomerLayout({
+export default async function CustomerLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
+    const session = await getServerSession(authOptions);
+
     return (
-        <div className={styles.wrapper}>
-            <header className={styles.header}>
-                <div className={`container ${styles.navContainer}`}>
-                    <Link href="/" className={styles.logo}>
-                        E-Loyalty
-                    </Link>
-                    <nav className={styles.nav}>
-                        <Link href="/catalog">Rewards</Link>
-                        <Link href="/promotions">Deals</Link>
-                    </nav>
-                    <div className={styles.auth}>
-                        <Link href="/auth/signin">
-                            <Button variant="ghost" size="sm">Log In</Button>
-                        </Link>
-                        <Link href="/auth/register">
-                            <Button size="sm">Join Now</Button>
-                        </Link>
-                    </div>
-                </div>
-            </header>
+        <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: '#f8fafc' }}>
+            <CustomerHeader session={session} />
 
-            <main className={styles.main}>
-                {children}
-            </main>
+            <Box component="main" sx={{ flexGrow: 1, py: { xs: 3, md: 6 }, width: '100%' }}>
+                <Container maxWidth="xl" sx={{ px: { xs: 2, md: 4 } }}>
+                    {children}
+                </Container>
+            </Box>
 
-            <footer className={styles.footer}>
-                <div className="container">
-                    <p className={styles.copy}>&copy; 2024 E-Loyalty App. All rights reserved.</p>
-                </div>
-            </footer>
-        </div>
+            <Box component="footer" sx={{ py: 3, px: 2, mt: 'auto', backgroundColor: 'white', borderTop: '1px solid #eee' }}>
+                <Container maxWidth="lg">
+                    <Typography variant="body2" color="text.secondary" align="center">
+                        &copy; 2024 E-Loyalty App. All rights reserved.
+                    </Typography>
+                </Container>
+            </Box>
+        </Box>
     );
 }

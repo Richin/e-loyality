@@ -1,123 +1,154 @@
+
 import React from 'react';
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
 import prisma from '@/lib/prisma';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
-import { Card } from '@/components/ui/Card';
-import DigitalCard from '@/components/DigitalCard';
-import { Button } from '@/components/ui/Button';
-import Link from 'next/link';
-import styles from './dashboard.module.css';
-
-async function getMemberProfile(userId: string) {
-    return await prisma.memberProfile.findUnique({
-        where: { userId },
-    });
-}
+import DashboardView from '@/components/customer/DashboardView';
+import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
 
 export default async function DashboardPage() {
     const session = await getServerSession(authOptions);
 
-    if (!session || !session.user) {
+    if (!session?.user?.email) {
         redirect('/auth/signin');
     }
 
-    // The session.user object might not have the ID if we didn't add it to the JWT/Session callback correctly.
-    // We need to fetch the user by email if ID is missing (which it is currently in our basic setup)
-    let user = null;
-    if (session.user.email) {
-        user = await prisma.user.findUnique({
-            where: { email: session.user.email },
-            include: { memberProfile: true }
-        });
-    }
+    const user = await prisma.user.findUnique({
+        where: { email: session.user.email },
+        include: {
+            role: true,
+            memberProfile: {
+                include: {
+                    tier: { select: { name: true } },
+                },
+            },
+        },
+    });
 
     if (!user) {
-        return <div>User not found. Please contact support.</div>;
+        return <Typography>User not found. Please contact support.</Typography>;
     }
 
     const profile = user.memberProfile;
 
     if (!profile) {
-        // Create profile if missing (edge case for manual DB inserts)
         return (
-            <div className="container" style={{ padding: '2rem' }}>
-                <h1>Welcome, {user.name}</h1>
-                <p>Your member profile is being set up. Please refresh in a moment.</p>
-            </div>
-        )
+            <Box sx={{ p: 4 }}>
+                <Typography variant="h4">Welcome, {user.name}</Typography>
+                <Typography>Your member profile is being set up. Please refresh in a moment.</Typography>
+            </Box>
+        );
     }
 
+    const profileId = profile.id;
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const [recentTransactions, monthlyTransactions, featuredRewards, openTickets] = await Promise.all([
+        prisma.loyaltyTransaction.findMany({
+            where: { memberProfileId: profileId },
+            orderBy: { createdAt: 'desc' },
+            take: 6,
+            select: {
+                id: true,
+                description: true,
+                type: true,
+                points: true,
+                createdAt: true,
+                store: { select: { name: true } },
+            },
+        }),
+        prisma.loyaltyTransaction.findMany({
+            where: {
+                memberProfileId: profileId,
+                createdAt: { gte: monthStart },
+            },
+            select: { points: true, type: true },
+        }),
+        prisma.reward.findMany({
+            where: { isActive: true },
+            orderBy: { pointsCost: 'asc' },
+            take: 3,
+            select: {
+                id: true,
+                name: true,
+                description: true,
+                pointsCost: true,
+                category: true,
+            },
+        }),
+        prisma.supportTicket.count({
+            where: {
+                memberProfileId: profileId,
+                status: { not: 'CLOSED' },
+            },
+        }),
+    ]);
+
+    type MonthlyTransaction = (typeof monthlyTransactions)[number];
+    type RecentTransaction = (typeof recentTransactions)[number];
+    type FeaturedReward = (typeof featuredRewards)[number];
+
+    const monthEarned = monthlyTransactions
+        .filter((transaction: MonthlyTransaction) => transaction.type === 'EARN')
+        .reduce((total: number, transaction: MonthlyTransaction) => total + transaction.points, 0);
+
+    const monthRedeemed = monthlyTransactions
+        .filter((transaction: MonthlyTransaction) => transaction.type === 'REDEEM')
+        .reduce((total: number, transaction: MonthlyTransaction) => total + Math.abs(transaction.points), 0);
+
+    const netPoints = monthEarned - monthRedeemed;
+
+    const safeUser = {
+        name: user.name,
+        email: user.email,
+        role: user.role?.name ?? (session.user as any)?.role ?? 'MEMBER',
+    };
+
+    const safeProfile = {
+        id: profile.id,
+        pointsBalance: profile.pointsBalance,
+        pendingPoints: profile.pendingPoints,
+        expiredPoints: profile.expiredPoints,
+        pointsExpiryDate: profile.pointsExpiryDate ? profile.pointsExpiryDate.toISOString() : null,
+        cashbackBalance: profile.cashbackBalance ?? 0,
+        prepaidBalance: profile.prepaidBalance ?? 0,
+        currentStreak: profile.currentStreak ?? 0,
+        lastVisitDate: profile.lastVisitDate ? profile.lastVisitDate.toISOString() : null,
+        tier: profile.tier ? { name: profile.tier.name } : null,
+    };
+
+    const safeActivity = recentTransactions.map((transaction: RecentTransaction) => ({
+        id: transaction.id,
+        description: transaction.description,
+        type: transaction.type,
+        points: transaction.points,
+        createdAt: transaction.createdAt.toISOString(),
+        storeName: transaction.store?.name ?? null,
+    }));
+
+    const safeRewards = featuredRewards.map((reward: FeaturedReward) => ({
+        id: reward.id,
+        name: reward.name,
+        description: reward.description,
+        pointsCost: reward.pointsCost,
+        category: reward.category,
+    }));
+
     return (
-        <div className={styles.container}>
-            <header className={styles.header}>
-                <h1 className={styles.welcome}>Welcome back, {user.name}</h1>
-                <p className={styles.date}>{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-            </header>
-
-            {/* Digital Membership Card */}
-            <DigitalCard
-                name={user.name || 'Valued Member'}
-                memberId={profile.id}
-                tier={profile.currentTier}
-                points={profile.pointsBalance}
-            />
-
-            <h2 style={{ marginBottom: '1rem' }}>My Wallet</h2>
-            <div className={styles.grid} style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', marginBottom: '2rem' }}>
-                {/* Points Card */}
-                <Card title="Points">
-                    <div className={styles.pointsValue}>
-                        {profile.pointsBalance} <span className={styles.pointsLabel}>pts</span>
-                    </div>
-                </Card>
-
-                {/* Cashback Card */}
-                <Card title="Cashback">
-                    <div className={styles.pointsValue} style={{ color: '#27ae60' }}>
-                        ${profile.cashbackBalance?.toFixed(2) || '0.00'}
-                    </div>
-                    <p style={{ marginTop: '0.5rem', color: '#666', fontSize: '0.8rem' }}>Available to spend</p>
-                </Card>
-
-                {/* Prepaid Card */}
-                <Card title="Prepaid">
-                    <div className={styles.pointsValue} style={{ color: '#8e44ad' }}>
-                        ${profile.prepaidBalance?.toFixed(2) || '0.00'}
-                    </div>
-                    <p style={{ marginTop: '0.5rem', color: '#666', fontSize: '0.8rem' }}>Top up in store</p>
-                </Card>
-            </div>
-
-            <h2 style={{ marginBottom: '1rem' }}>Quick Actions</h2>
-            <div className={styles.grid}>
-
-                {/* Quick Actions Card */}
-                <Card title="Quick Actions">
-                    <div className={styles.actions}>
-                        <Link href="/catalog" style={{ width: '100%' }}>
-                            <Button fullWidth>Redeem Rewards</Button>
-                        </Link>
-                        <Link href="/profile" style={{ width: '100%' }}>
-                            <Button variant="outline" fullWidth>My Profile</Button>
-                        </Link>
-                        <Link href="/referrals" style={{ width: '100%' }}>
-                            <Button variant="outline" fullWidth>Refer & Earn</Button>
-                        </Link>
-                        <Link href="/history" style={{ width: '100%' }}>
-                            <Button variant="ghost" fullWidth>History</Button>
-                        </Link>
-                    </div>
-                </Card>
-
-                {/* Recent Activity Placeholder */}
-                <Card title="Recent Activity" className={styles.wideCard}>
-                    <div className={styles.emptyState}>
-                        <p>Check your recent transactions and point earnings.</p>
-                        <Link href="/history"><Button variant="ghost" size="sm">View Full History</Button></Link>
-                    </div>
-                </Card>
-            </div>
-        </div>
+        <DashboardView
+            user={safeUser}
+            profile={safeProfile}
+            recentActivity={safeActivity}
+            featuredRewards={safeRewards}
+            stats={{
+                monthEarned,
+                monthRedeemed,
+                netPoints,
+                openTickets,
+            }}
+        />
     );
 }

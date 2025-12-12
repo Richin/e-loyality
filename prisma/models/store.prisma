@@ -1,0 +1,21 @@
+
+model Store {
+  id          String   @id @default(cuid())
+  name        String
+  address     String
+  city        String
+  postalCode  String
+  
+  latitude    Float
+  longitude   Float
+  
+  phone       String?
+  email       String?
+  openingHours String? // Text description e.g. "Mon-Fri: 9am-9pm"
+  
+  imageUrl    String?
+  
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

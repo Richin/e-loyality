@@ -1,53 +1,38 @@
+
 'use client';
 
 import React from 'react';
+import Box from '@mui/material/Box';
+import AppBar from '@mui/material/AppBar';
+import Toolbar from '@mui/material/Toolbar';
+import Typography from '@mui/material/Typography';
+import Sidebar from '@/components/admin/Sidebar';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { signOut } from 'next-auth/react';
-import styles from './admin.module.css';
+import Button from '@mui/material/Button';
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
-    const pathname = usePathname();
-
-    const menuItems = [
-        { label: 'Dashboard', href: '/admin' },
-        { label: 'Users', href: '/admin/users' },
-        { label: 'Rewards', href: '/admin/rewards' },
-        { label: 'Campaigns', href: '/campaigns' },
-        { label: 'Marketing', href: '/admin/marketing' },
-        { label: 'Vouchers', href: '/admin/vouchers' },
-        { label: 'Tiers', href: '/admin/tiers' },
-        { label: 'Rules', href: '/admin/program' },
-        { label: 'Feedback', href: '/admin/feedback' },
-        { label: 'Settings', href: '/admin/settings' },
-    ];
-
+export default function AdminLayout({
+    children,
+}: {
+    children: React.ReactNode;
+}) {
     return (
-        <div className={styles.layout}>
-            <aside className={styles.sidebar}>
-                <div className={styles.logo}>
-                    <h2>Admin Panel</h2>
-                </div>
-                <nav className={styles.nav}>
-                    {menuItems.map((item) => (
-                        <Link
-                            key={item.href}
-                            href={item.href}
-                            className={`${styles.navItem} ${pathname === item.href ? styles.active : ''}`}
-                        >
-                            {item.label}
-                        </Link>
-                    ))}
-                </nav>
-                <div className={styles.logout}>
-                    <button onClick={() => signOut()} className={styles.logoutBtn}>
-                        Sign Out
-                    </button>
-                </div>
-            </aside>
-            <main className={styles.mainContent}>
+        <Box sx={{ display: 'flex' }}>
+            <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
+                <Toolbar>
+                    <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
+                        Admin Portal
+                    </Typography>
+                    <Button color="inherit" component={Link} href="/dashboard">
+                        Exit to App
+                    </Button>
+                </Toolbar>
+            </AppBar>
+
+            <Sidebar />
+
+            <Box component="main" sx={{ flexGrow: 1, p: 3, marginTop: '64px' }}> // Toolbar height offset
                 {children}
-            </main>
-        </div>
+            </Box>
+        </Box>
     );
 }
