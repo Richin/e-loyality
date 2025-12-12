@@ -3,7 +3,7 @@
 import React, { useRef, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import html2canvas from 'html2canvas';
-import { Button } from '@/components/ui/Button';
+import Button from '@mui/material/Button';
 
 interface DigitalCardProps {
     name: string;
@@ -106,7 +106,7 @@ export default function DigitalCard({ name, memberId, tier, points }: DigitalCar
             </div>
 
             <div style={{ textAlign: 'right', marginBottom: '2rem' }}>
-                <Button variant="outline" size="sm" onClick={handleDownload} disabled={downloading}>
+                <Button variant="outlined" size="small" onClick={handleDownload} disabled={downloading}>
                     {downloading ? 'Downloading...' : 'Download Card'}
                 </Button>
             </div>

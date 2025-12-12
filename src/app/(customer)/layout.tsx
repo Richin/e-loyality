@@ -2,8 +2,10 @@ import React from 'react';
 import Link from 'next/link';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
-import AuthButtons from '@/components/AuthButtons';
-import styles from './CustomerLayout.module.css';
+import CustomerHeader from '@/components/customer/CustomerHeader';
+import Box from '@mui/material/Box';
+import Container from '@mui/material/Container';
+import Typography from '@mui/material/Typography';
 
 export default async function CustomerLayout({
     children,
@@ -13,40 +15,20 @@ export default async function CustomerLayout({
     const session = await getServerSession(authOptions);
 
     return (
-        <div className={styles.wrapper}>
-            <header className={styles.header}>
-                <div className={`container ${styles.navContainer}`}>
-                    <Link href="/dashboard" className={styles.logo}>
-                        E-Loyalty
-                    </Link>
-                    <nav className={styles.nav}>
-                        <Link href="/catalog">Rewards</Link>
-                        <Link href="/promotions">Deals</Link>
-                        <Link href="/achievements">Achievements</Link>
-                        <Link href="/referrals">Referrals</Link>
-                        <Link href="/support">Support</Link>
-                        <Link href="/inbox">Inbox</Link>
-                        <Link href="/stores">Stores</Link>
-                        <Link href="/settings">Settings</Link>
-                        {/* @ts-ignore */}
-                        {['ADMIN', 'SUPER ADMIN', 'MANAGER'].includes(session?.user?.role || '') && (
-                            <Link href="/admin/dashboard" style={{ color: '#2563eb', fontWeight: 'bold' }}>Admin Panel</Link>
-                        )}
-                    </nav>
+        <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: '#f8fafc' }}>
+            <CustomerHeader session={session} />
 
-                    <AuthButtons session={session} />
-                </div>
-            </header>
-
-            <main className={styles.main}>
+            <Container component="main" maxWidth="lg" sx={{ flexGrow: 1, py: 4 }}>
                 {children}
-            </main>
+            </Container>
 
-            <footer className={styles.footer}>
-                <div className="container">
-                    <p className={styles.copy}>&copy; 2024 E-Loyalty App. All rights reserved.</p>
-                </div>
-            </footer>
-        </div>
+            <Box component="footer" sx={{ py: 3, px: 2, mt: 'auto', backgroundColor: 'white', borderTop: '1px solid #eee' }}>
+                <Container maxWidth="lg">
+                    <Typography variant="body2" color="text.secondary" align="center">
+                        &copy; 2024 E-Loyalty App. All rights reserved.
+                    </Typography>
+                </Container>
+            </Box>
+        </Box>
     );
 }
