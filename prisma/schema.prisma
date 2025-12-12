@@ -1,0 +1,192 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          String    @default("USER") // USER, ADMIN
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  memberProfile MemberProfile?
+}
+
+model MemberProfile {
+  id             String    @id @default(cuid())
+  userId         String    @unique
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  phone          String?
+  dateOfBirth    DateTime?
+  joinDate       DateTime  @default(now())
+  
+  pointsBalance  Int       @default(0)
+  currentTier    String    @default("BRONZE") // Fallback if no Tier model found
+  
+  // Phase 4: Multi-Wallet
+  cashbackBalance Float    @default(0.0)
+  prepaidBalance  Float    @default(0.0)
+  
+  transactions   LoyaltyTransaction[]
+  redemptions    Redemption[]
+  userBadges     UserBadge[]
+  
+  optInMarketing Boolean   @default(false)
+
+  referralCode   String?   @unique
+  referredBy     String?   // Store the referral code of the person who referred them
+  
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model LoyaltyTransaction {
+  id              String         @id @default(cuid())
+  memberProfileId String
+  memberProfile   MemberProfile  @relation(fields: [memberProfileId], references: [id])
+  
+  type            String         // EARN, REDEEM, ADJUSTMENT
+  points          Int            // Positive for earn, negative for redeem
+  description     String?
+  amount          Float?         // Monetary value if purchase
+  
+  createdAt       DateTime       @default(now())
+}
+
+model Reward {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  pointsCost  Int
+  imageUrl    String?
+  isActive    Boolean  @default(true)
+  
+  redemptions Redemption[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Redemption {
+  id              String         @id @default(cuid())
+  memberProfileId String
+  memberProfile   MemberProfile  @relation(fields: [memberProfileId], references: [id])
+  rewardId        String
+  reward          Reward         @relation(fields: [rewardId], references: [id])
+  
+  status          String         @default("PENDING") // PENDING, FULFILLED, CANCELLED
+  
+  // Phase 4: Voucher Lifecycle
+  code            String?        @unique // Voucher Code
+  expiresAt       DateTime?
+  usedAt          DateTime?
+  
+  redeemedAt      DateTime       @default(now())
+}
+
+model Segment {
+  id        String     @id @default(cuid())
+  name      String
+  criteria  String     // JSON string: { "minPoints": 1000, "daysInactive": 30 ... }
+  
+  campaigns Campaign[]
+  
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model Campaign {
+  id          String   @id @default(cuid())
+  name        String
+  subject     String?
+  content     String?  // HTML content or Template ID
+  type        String   // EMAIL, SMS
+  status      String   @default("DRAFT") // DRAFT, SCHEDULED, SENT
+  
+  // Phase 5: Automation & Segmentation
+  scheduledAt DateTime?
+  segmentId   String?
+  segment     Segment? @relation(fields: [segmentId], references: [id])
+  
+  // A/B Testing
+  parentId    String?  // If set, this is a variant of parentId
+  variantName String?  // "A", "B", "Control"
+  
+  sentAt      DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ... existing models ...
+
+// Phase 4: New Models
+
+model Tier {
+  id        String   @id @default(cuid())
+  name      String   @unique // e.g., Silver, Gold
+  threshold Int      // Points required
+  benefits  String?  @db.Text
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ProgramSetting {
+  id        String   @id @default(cuid())
+  settingKey String  @unique // e.g., "earn_rate", "currency_symbol"
+  value     String   // e.g., "1.5", "$"
+  description String?
+}
+
+model Feedback {
+  id        String   @id @default(cuid())
+  userId    String?
+  // We can link to User if we want, or just keep it optional for anonymous
+  
+  category  String   // Service, App, Product, Other
+  message   String   @db.Text
+  rating    Int      // 1-5
+  
+  createdAt DateTime @default(now())
+}
+
+model Badge {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  icon        String?  // Emoji or URL
+  
+  userBadges  UserBadge[]
+}
+
+model UserBadge {
+  id              String        @id @default(cuid())
+  memberProfileId String
+  memberProfile   MemberProfile @relation(fields: [memberProfileId], references: [id])
+  badgeId         String
+  badge           Badge         @relation(fields: [badgeId], references: [id])
+  
+  awardedAt       DateTime      @default(now())
+
+  @@unique([memberProfileId, badgeId]) // Cannot have duplicate badges of same type
+}
+
+model ApiKey {
+  id        String   @id @default(cuid())
+  key       String   @unique // The secret key used in headers
+  name      String   // e.g., "POS Terminal 1"
+  isActive  Boolean  @default(true)
+  
+  createdAt DateTime @default(now())
+  lastUsedAt DateTime?
+}

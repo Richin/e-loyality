@@ -1,0 +1,67 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xl);
+}
+
+.hero {
+    padding: 6rem 0;
+    background: linear-gradient(135deg, var(--surface-1) 0%, var(--surface-2) 100%);
+    text-align: center;
+}
+
+.heroContent {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.heroTitle {
+    font-size: 3.5rem;
+    margin-bottom: var(--spacing-md);
+    background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.heroSubtitle {
+    font-size: 1.25rem;
+    color: var(--text-muted);
+    margin-bottom: var(--spacing-lg);
+}
+
+.heroCta {
+    display: flex;
+    gap: var(--spacing-md);
+    justify-content: center;
+}
+
+.features {
+    padding: var(--spacing-xl) 0;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--spacing-lg);
+}
+
+.ctaSection {
+    padding-bottom: var(--spacing-xl);
+    text-align: center;
+}
+
+.ctaCard {
+    background: var(--primary);
+    color: var(--on-primary);
+    padding: 4rem 2rem;
+    border-radius: var(--radius-lg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.ctaCard h2 {
+    color: var(--on-primary);
+    margin-bottom: 0;
+}

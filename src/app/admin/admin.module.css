@@ -1,0 +1,131 @@
+.layout {
+    display: flex;
+    min-height: 100vh;
+    background-color: #f5f5f5;
+}
+
+.sidebar {
+    width: 250px;
+    background-color: #fff;
+    border-right: 1px solid #eee;
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem;
+    position: fixed;
+    height: 100vh;
+}
+
+.logo {
+    margin-bottom: 2rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex-grow: 1;
+}
+
+.navItem {
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    color: #666;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.navItem:hover {
+    background-color: #f9f9f9;
+    color: #333;
+}
+
+.active {
+    background-color: #e6f4ea;
+    color: var(--primary);
+    font-weight: 500;
+}
+
+.logout {
+    margin-top: auto;
+    border-top: 1px solid #eee;
+    padding-top: 1rem;
+}
+
+.logoutBtn {
+    background: none;
+    border: none;
+    color: #c62828;
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 0.5rem;
+    width: 100%;
+    text-align: left;
+}
+
+.mainContent {
+    flex-grow: 1;
+    margin-left: 250px;
+    padding: 2rem;
+}
+
+/* Dashboard Grid */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+    margin-top: 2rem;
+}
+
+.statCard {
+    background: #fff;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.statLabel {
+    color: #666;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.statValue {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #333;
+}
+
+/* Tables */
+.tableContainer {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    margin-top: 1.5rem;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.table th,
+.table td {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.table th {
+    background-color: #f9f9f9;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #555;
+}
+
+.table tr:last-child td {
+    border-bottom: none;
+}

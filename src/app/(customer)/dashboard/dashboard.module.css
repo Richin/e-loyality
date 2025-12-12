@@ -1,0 +1,69 @@
+.container {
+    padding: var(--spacing-lg) var(--spacing-md);
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.header {
+    margin-bottom: var(--spacing-xl);
+}
+
+.welcome {
+    font-size: 2rem;
+    margin-bottom: var(--spacing-xs);
+}
+
+.date {
+    color: var(--text-muted);
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--spacing-lg);
+}
+
+.balanceCard {
+    background: linear-gradient(135deg, var(--surface-1) 0%, var(--surface-2) 100%);
+    border-color: var(--primary-light);
+}
+
+.pointsValue {
+    font-size: 3rem;
+    font-weight: 800;
+    color: var(--primary);
+    line-height: 1;
+    margin-bottom: var(--spacing-sm);
+}
+
+.pointsLabel {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text-muted);
+}
+
+.tierStatus {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+}
+
+.tierName {
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.wideCard {
+    grid-column: 1 / -1;
+}
+
+.emptyState {
+    text-align: center;
+    padding: var(--spacing-lg);
+    color: var(--text-muted);
+}
