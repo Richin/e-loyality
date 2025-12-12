@@ -1,24 +1,25 @@
-import { PrismaClient } from '@prisma/client';
 
+const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function main() {
-    console.log("🔍 Debugging User State...");
+    try {
+        const userCount = await prisma.user.count();
+        console.log(`Total users found: ${userCount}`);
 
-    const users = await prisma.user.findMany({
-        include: { role: true }
-    });
-
-    console.log(`Found ${users.length} users:`);
-    console.table(users.map(u => ({
-        email: u.email,
-        name: u.name,
-        role: u.role?.name || 'NULL (No Role)',
-        hasPassword: !!u.password,
-        isSuspended: u.isSuspended
-    })));
+        if (userCount > 0) {
+            const users = await prisma.user.findMany({
+                select: { email: true, role: { select: { name: true } } }
+            });
+            console.log('Users:', JSON.stringify(users, null, 2));
+        } else {
+            console.log('No users found in the database.');
+        }
+    } catch (e) {
+        console.error('Error connecting to database:', e);
+    } finally {
+        await prisma.$disconnect();
+    }
 }
 
-main()
-    .catch(console.error)
-    .finally(() => prisma.$disconnect());
+main();

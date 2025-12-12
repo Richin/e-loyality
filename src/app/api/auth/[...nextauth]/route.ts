@@ -4,6 +4,8 @@ import prisma from "@/lib/prisma"
 import CredentialsProvider from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
 
+console.error("🚀 LOADED route.ts for NextAuth");
+
 export const authOptions: AuthOptions = {
     adapter: PrismaAdapter(prisma),
     providers: [
@@ -14,19 +16,42 @@ export const authOptions: AuthOptions = {
                 password: { label: "Password", type: "password" }
             },
             async authorize(credentials) {
-                if (!credentials?.email || !credentials?.password) return null
-
-                const user = await prisma.user.findUnique({
-                    where: { email: credentials.email },
-                    include: { role: true } // Fetch Role Relation
-                })
-
-                if (!user) {
-                    console.log("User not found:", credentials.email);
+                console.error("🔍 Authorize called with:", credentials?.email);
+                if (!credentials?.email || !credentials?.password) {
+                    console.error("❌ Missing credentials");
                     return null;
                 }
 
-                // ... (password check)
+                const user = await prisma.user.findUnique({
+                    where: { email: credentials.email },
+                    include: { role: true }
+                })
+
+                if (!user) {
+                    console.log("❌ User not found:", credentials.email);
+                    return null;
+                }
+
+                if (!user.password) {
+                    console.log("❌ User has no password set:", credentials.email);
+                    return null;
+                }
+
+                const isValid = await bcrypt.compare(credentials.password, user.password);
+
+                if (!isValid) {
+                    console.log("❌ Invalid password for:", credentials.email);
+                    return null;
+                }
+
+                console.log("✅ User authenticated in authorize:", credentials.email);
+                // Ensure tokenVersion is present
+                // @ts-ignore
+                if (user.tokenVersion === undefined || user.tokenVersion === null) {
+                    console.log("⚠️ User missing tokenVersion, defaulting to 0");
+                    // @ts-ignore
+                    user.tokenVersion = 0;
+                }
 
                 return user;
             }
@@ -37,6 +62,7 @@ export const authOptions: AuthOptions = {
     },
     callbacks: {
         async jwt({ token, user }) {
+            console.log("🔍 JWT callback. Token sub:", token?.sub, "User present:", !!user);
             if (user) {
                 token.id = user.id;
                 // @ts-ignore
@@ -55,7 +81,13 @@ export const authOptions: AuthOptions = {
                     }
                 });
 
-                if (!dbUser || (dbUser.tokenVersion || 0) !== (token.version || 0)) {
+                if (!dbUser) {
+                    console.log("❌ DB User not found in JWT:", token.sub);
+                    return {};
+                }
+
+                if ((dbUser.tokenVersion || 0) !== (token.version || 0)) {
+                    console.log("❌ Token version mismatch. DB:", dbUser.tokenVersion, "Token:", token.version);
                     return {}; // Invalid token
                 }
 
@@ -66,7 +98,9 @@ export const authOptions: AuthOptions = {
             return token;
         },
         async session({ session, token }) {
+            console.log("🔍 Session callback. Token keys:", Object.keys(token));
             if (Object.keys(token).length === 0) {
+                console.log("❌ Empty token in session callback");
                 return null as any;
             }
 

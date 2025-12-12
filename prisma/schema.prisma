@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -205,7 +205,6 @@ model Store {
   transactions LoyaltyTransaction[]
   redemptions  Redemption[]
   staff        StoreStaff[]
-  terminals    PosTerminal[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
