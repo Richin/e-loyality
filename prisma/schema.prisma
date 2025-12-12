@@ -14,14 +14,79 @@ model User {
   emailVerified DateTime?
   image         String?
   password      String?
-  role          String    @default("USER") // USER, ADMIN
+  // role          String    @default("USER") // REMOVED in favor of RBAC
   createdAt     DateTime  @default(now())
   tokenVersion  Int       @default(0)
   isSuspended   Boolean   @default(false)
 
+  // Security & RBAC
+  roleId        String?
+  role          Role?     @relation(fields: [roleId], references: [id])
+  permissions   String?   // JSON list of direct permissions (optional override)
+
   memberProfile MemberProfile?
   feedback      Feedback[]
   auditLogs     AuditLog[]    @relation("AdminAudit")
+  storeStaff    StoreStaff[]
+}
+
+// ... (Existing models)
+
+model Role {
+  id          String       @id @default(cuid())
+  name        String       @unique // "Super Admin", "Support", "Finance"
+  description String?
+  permissions Permission[]
+  users       User[]
+  
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model Permission {
+  id          String   @id @default(cuid())
+  action      String   @unique // "user.create", "report.view"
+  description String?
+  roles       Role[]
+  
+  groupBy     String   @default("General") // For UI grouping
+}
+
+model IpList {
+  id        String   @id @default(cuid())
+  ip        String   @unique
+  type      String   @default("DENY") // ALLOW, DENY
+  reason    String?
+  isActive  Boolean  @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SecurityEvent {
+  id        String   @id @default(cuid())
+  userId    String?
+  ipAddress String?
+  userAgent String?
+  action    String   // LOGIN_FAIL, UNAUTHORIZED_ACCESS, SUSPICIOUS_ACTIVITY
+  details   String?  @db.Text
+  
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  adminId   String
+  admin     User     @relation("AdminAudit", fields: [adminId], references: [id])
+  targetId  String?  // ID of user/resource affected
+  action    String   // POINT_ADJUST, TIER_FORCE, SUSPEND, MERGE
+  details   String?  @db.Text
+  
+  // Enhanced Tracking
+  ipAddress String?
+  userAgent String?
+  
+  createdAt DateTime @default(now())
 }
 
 model MemberProfile {
@@ -113,7 +178,7 @@ model LoyaltyTransaction {
 
   createdAt DateTime @default(now())
 }
-// ... (skip models)
+
 model Store {
   id          String   @id @default(cuid())
   name        String
@@ -131,12 +196,15 @@ model Store {
   imageUrl    String?
   
   isActive    Boolean  @default(true)
+  code        String?  @unique // POS Store Code
   
   // Phase 6: POS Monitoring
   lastSyncAt  DateTime?
   posStatus   String    @default("OFFLINE") // OFFLINE, ONLINE, MAINTENANCE
 
   transactions LoyaltyTransaction[]
+  redemptions  Redemption[]
+  staff        StoreStaff[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -147,6 +215,7 @@ model Reward {
   name        String
   description String?
   pointsCost  Int
+  costPrice   Float   @default(0.0) // Business cost
   imageUrl    String?
   category    String  @default("OTHER") // Food, Merch, Voucher
   type        String  @default("DIGITAL") // DIGITAL, PHYSICAL
@@ -191,6 +260,10 @@ model Redemption {
   isGift             Boolean @default(false)
   giftRecipientEmail String?
 
+  // Phase 8: Store Tracking
+  storeId String?
+  store   Store?  @relation(fields: [storeId], references: [id])
+
   redeemedAt DateTime @default(now())
 }
 
@@ -223,16 +296,37 @@ model Campaign {
   variantName String? // "A", "B", "Control"
 
   sentAt    DateTime?
-  
 
+  communicationLogs CommunicationLog[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 }
 
-// ... existing models ...
+model MessageTemplate {
+  id        String   @id @default(cuid())
+  name      String
+  type      String   // EMAIL, SMS
+  subject   String?  // For Email
+  content   String   @db.Text
+  variables String?  // JSON list e.g. ["name", "points"]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
 
-// Phase 4: New Models
+model StoreStaff {
+  id        String   @id @default(cuid())
+  storeId   String
+  store     Store    @relation(fields: [storeId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  role      String   @default("CASHIER") // MANAGER, CASHIER
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([storeId, userId])
+}
 
 model Tier {
   id        String  @id @default(cuid())
@@ -331,15 +425,7 @@ model UserBadge {
   @@unique([memberProfileId, badgeId]) // Cannot have duplicate badges of same type
 }
 
-model ApiKey {
-  id       String  @id @default(cuid())
-  key      String  @unique // The secret key used in headers
-  name     String // e.g., "POS Terminal 1"
-  isActive Boolean @default(true)
 
-  createdAt  DateTime  @default(now())
-  lastUsedAt DateTime?
-}
 
 model Challenge {
   id           String    @id @default(cuid())
@@ -405,6 +491,52 @@ model FAQ {
   isActive Boolean @default(true)
 }
 
+model ApiKey {
+  id           String   @id @default(cuid())
+  key          String   @unique
+  name         String
+  permissions  String?  // JSON or comma-separated list
+  rateLimitWaiver Boolean @default(false)
+  isActive     Boolean  @default(true)
+  lastIp       String?
+  
+  createdAt    DateTime @default(now())
+  lastUsedAt   DateTime?
+  
+  logs         IntegrationLog[]
+}
+
+model WebhookEndpoint {
+  id        String   @id @default(cuid())
+  url       String
+  secret    String?
+  events    String   // JSON list of events
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model IntegrationLog {
+  id           String   @id @default(cuid())
+  endpoint     String
+  method       String
+  status       Int
+  latency      Int      // in ms
+  apiKeyId     String?
+  apiKey       ApiKey?  @relation(fields: [apiKeyId], references: [id])
+  errorDetails String?  @db.Text
+  createdAt    DateTime @default(now())
+}
+
+model PosTerminal {
+  id          String   @id @default(cuid())
+  terminalId  String   @unique // External ID from POS system
+  storeId     String
+  store       Store    @relation(fields: [storeId], references: [id])
+  status      String   @default("OFFLINE") // ONLINE, OFFLINE
+  lastSyncAt  DateTime?
+  createdAt   DateTime @default(now())
+}
+
 model Notification {
   id              String        @id @default(cuid())
   memberProfileId String
@@ -417,13 +549,3 @@ model Notification {
 }
 
 
-
-model AuditLog {
-  id        String   @id @default(cuid())
-  adminId   String
-  admin     User     @relation("AdminAudit", fields: [adminId], references: [id])
-  targetId  String?  // ID of user/resource affected
-  action    String   // POINT_ADJUST, TIER_FORCE, SUSPEND, MERGE
-  details   String?  @db.Text
-  createdAt DateTime @default(now())
-}

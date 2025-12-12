@@ -7,8 +7,20 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
     const session = await getServerSession(authOptions);
-    // @ts-ignore
-    if (!session || session.user?.role !== 'ADMIN') return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    // Role Check
+    if (!session || !session.user?.email) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
+    const user = await prisma.user.findUnique({
+        where: { email: session.user.email },
+        select: { role: { select: { name: true } } }
+    });
+
+    const roleName = user?.role?.name || '';
+    if (!['ADMIN', 'SUPER ADMIN', 'MANAGER'].includes(roleName)) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
     try {
         const codes = await prisma.promoCode.findMany({

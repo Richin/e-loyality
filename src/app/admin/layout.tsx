@@ -28,6 +28,8 @@ export default function AdminLayout({
                             <Link href="/admin/stores" style={{ color: '#e2e8f0', textDecoration: 'none' }}>Stores</Link>
                             <Link href="/admin/transactions" style={{ color: '#e2e8f0', textDecoration: 'none' }}>Transactions</Link>
                             <Link href="/admin/insights" style={{ color: '#38bdf8', textDecoration: 'none', fontWeight: 'bold' }}>Insights ✨</Link>
+                            <Link href="/admin/finance" style={{ color: '#e2e8f0', textDecoration: 'none', fontWeight: 'bold' }}>Finance 💰</Link>
+                            <Link href="/admin/security" style={{ color: '#ef4444', textDecoration: 'none', fontWeight: 'bold' }}>Security 🛡️</Link>
                             <Link href="/admin/communications" style={{ color: '#e2e8f0', textDecoration: 'none' }}>Communications</Link>
                         </nav>
                     </div>

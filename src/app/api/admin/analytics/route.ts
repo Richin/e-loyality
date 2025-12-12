@@ -17,10 +17,11 @@ export async function GET() {
     // Role Check
     const user = await prisma.user.findUnique({
         where: { email: session.user.email },
-        select: { role: true }
+        select: { role: { select: { name: true } } }
     });
 
-    if (user?.role !== 'ADMIN') {
+    const roleName = user?.role?.name || '';
+    if (!['ADMIN', 'SUPER ADMIN', 'MANAGER'].includes(roleName)) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

@@ -65,7 +65,10 @@ export default function AdminStoresPage() {
                                         <div>🔄 Last Sync: {s.lastSyncAt ? new Date(s.lastSyncAt).toLocaleString() : 'Never'}</div>
                                     </div>
 
-                                    <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #eee' }}>
+                                    <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #eee', display: 'flex', gap: '1rem' }}>
+                                        <a href={`/admin/stores/${s.id}`} style={{ textDecoration: 'none', color: '#2563eb', fontWeight: 'bold', fontSize: '0.9rem' }}>
+                                            Manage Store
+                                        </a>
                                         <button onClick={() => handleDelete(s.id)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9rem' }}>
                                             Delete Store
                                         </button>

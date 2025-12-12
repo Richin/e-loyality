@@ -29,8 +29,8 @@ export default async function CustomerLayout({
                         <Link href="/stores">Stores</Link>
                         <Link href="/settings">Settings</Link>
                         {/* @ts-ignore */}
-                        {session?.user?.role === 'ADMIN' && (
-                            <Link href="/admin/dashboard" style={{ color: '#2563eb', fontWeight: 'bold' }}>Admin</Link>
+                        {['ADMIN', 'SUPER ADMIN', 'MANAGER'].includes(session?.user?.role || '') && (
+                            <Link href="/admin/dashboard" style={{ color: '#2563eb', fontWeight: 'bold' }}>Admin Panel</Link>
                         )}
                     </nav>
 

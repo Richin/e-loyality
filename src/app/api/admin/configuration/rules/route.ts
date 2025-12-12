@@ -35,9 +35,31 @@ export async function POST(req: Request) {
         };
 
         if (body.id) {
+            // Role Check for update
+            const user = await prisma.user.findUnique({
+                where: { email: session.user.email },
+                select: { role: { select: { name: true } } }
+            });
+
+            const roleName = user?.role?.name || '';
+            if (!['ADMIN', 'SUPER ADMIN', 'MANAGER'].includes(roleName)) {
+                return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+            }
+
             const rule = await prisma.loyaltyRule.update({ where: { id: body.id }, data });
             return NextResponse.json(rule);
         } else {
+            // Role Check for create
+            const user = await prisma.user.findUnique({
+                where: { email: session.user.email },
+                select: { role: { select: { name: true } } }
+            });
+
+            const roleName = user?.role?.name || '';
+            if (!['ADMIN', 'SUPER ADMIN', 'MANAGER'].includes(roleName)) {
+                return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+            }
+
             const rule = await prisma.loyaltyRule.create({ data });
             return NextResponse.json(rule);
         }
