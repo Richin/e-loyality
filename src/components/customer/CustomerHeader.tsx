@@ -24,7 +24,7 @@ export default function CustomerHeader({ session }: { session: any }) {
 
     return (
         <AppBar position="sticky" color="default" sx={{ bgcolor: 'white', color: 'text.primary', boxShadow: 1 }}>
-            <Container maxWidth="lg">
+            <Container maxWidth={false}>
                 <Toolbar disableGutters>
                     {/* Logo */}
                     <Typography

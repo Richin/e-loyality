@@ -18,9 +18,9 @@ export default async function CustomerLayout({
         <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: '#f8fafc' }}>
             <CustomerHeader session={session} />
 
-            <Container component="main" maxWidth="lg" sx={{ flexGrow: 1, py: 4 }}>
+            <Box component="main" sx={{ flexGrow: 1, p: { xs: 2, md: 4 }, width: '100%' }}>
                 {children}
-            </Container>
+            </Box>
 
             <Box component="footer" sx={{ py: 3, px: 2, mt: 'auto', backgroundColor: 'white', borderTop: '1px solid #eee' }}>
                 <Container maxWidth="lg">

@@ -4,16 +4,27 @@
 import React from 'react';
 import Link from 'next/link';
 import DigitalCard from '@/components/DigitalCard';
+import StatCard from '@/components/customer/StatCard';
+import ActionTile from '@/components/customer/ActionTile';
 
 // MUI Imports
 import Grid from '@mui/material/Grid';
 import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 import LinearProgress from '@mui/material/LinearProgress';
-import Stack from '@mui/material/Stack';
+import Chip from '@mui/material/Chip';
+
+// Icons
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+import LoyaltyIcon from '@mui/icons-material/Loyalty';
+import CreditCardIcon from '@mui/icons-material/CreditCard';
+import redeemIcon from '@mui/icons-material/CardGiftcard';
+import historyIcon from '@mui/icons-material/History';
+import peopleIcon from '@mui/icons-material/People';
+import supportIcon from '@mui/icons-material/SupportAgent';
+
 
 interface DashboardViewProps {
     user: {
@@ -46,114 +57,138 @@ export default function DashboardView({ user, profile }: DashboardViewProps) {
 
     return (
         <Box>
-            <Box sx={{ mb: 4 }}>
-                <Typography variant="h4" fontWeight="bold" gutterBottom>
-                    Welcome back, {user.name}
+            {/* Hero Welcome */}
+            <Box sx={{ mb: 6, textAlign: 'center' }}>
+                <Typography variant="h3" fontWeight="800" sx={{ background: 'linear-gradient(45deg, #1e293b 30%, #3b82f6 90%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', mb: 1 }}>
+                    Hello, {user.name?.split(' ')[0]}
                 </Typography>
-                <Typography color="text.secondary">
-                    {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                <Typography color="text.secondary" variant="h6">
+                    Here is your membership overview for today.
                 </Typography>
             </Box>
 
-            <Grid container spacing={4}>
-                {/* Left Column: Digital Card & Progress */}
-                <Grid item xs={12} md={5}>
-                    <DigitalCard
-                        name={user.name || 'Valued Member'}
-                        memberId={profile.id}
-                        tier={profile.tier?.name || 'Bronze'}
-                        points={profile.pointsBalance}
-                    />
+            {/* Top Row: My Wallet (Full Width) */}
+            <Box sx={{ mb: 5 }}>
+                <Typography variant="h5" fontWeight="bold" sx={{ mb: 3 }}>My Wallet</Typography>
+                <Grid container spacing={3}>
+                    <Grid item xs={12} sm={4}>
+                        <StatCard
+                            title="Loyalty Points"
+                            value={profile.pointsBalance.toLocaleString()}
+                            icon={<LoyaltyIcon />}
+                            color="#f59e0b" // Amber
+                            subtitle={`${profile.pendingPoints} Pending`}
+                        />
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                        <StatCard
+                            title="Cashback"
+                            value={`$${profile.cashbackBalance?.toFixed(2) || '0.00'}`}
+                            icon={<AccountBalanceWalletIcon />}
+                            color="#10b981" // Emerald
+                            subtitle="Available to spend"
+                        />
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                        <StatCard
+                            title="Prepaid Balance"
+                            value={`$${profile.prepaidBalance?.toFixed(2) || '0.00'}`}
+                            icon={<CreditCardIcon />}
+                            color="#6366f1" // Indigo
+                            subtitle="Auto-reload is OFF"
+                        />
+                    </Grid>
+                </Grid>
+            </Box>
 
-                    {nextTier && (
-                        <Card sx={{ mt: 3, p: 2 }}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                                <Typography variant="body2">Progress to {nextTier.name}</Typography>
-                                <Typography variant="body2" fontWeight="bold">{profile.pointsBalance} / {nextTier.threshold} pts</Typography>
+            <Grid container spacing={4}>
+                {/* Left Column: Digital Card & Status (Smaller now that wallet is gone) */}
+                <Grid item xs={12} md={3}>
+                    <Box sx={{ position: 'sticky', top: 100 }}>
+                        <Typography variant="h5" fontWeight="bold" sx={{ mb: 3 }}>My Card</Typography>
+                        <DigitalCard
+                            name={user.name || 'Valued Member'}
+                            memberId={profile.id}
+                            tier={profile.tier?.name || 'Bronze'}
+                            points={profile.pointsBalance}
+                        />
+
+                        {nextTier && (
+                            <Box sx={{ mt: 4, px: 2 }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, alignItems: 'flex-end' }}>
+                                    <Typography variant="subtitle2" color="text.secondary">Next Tier: {nextTier.name}</Typography>
+                                    <Typography variant="h6" fontWeight="bold" color="primary">{profile.pointsBalance} / {nextTier.threshold}</Typography>
+                                </Box>
+                                <LinearProgress
+                                    variant="determinate"
+                                    value={progress}
+                                    sx={{
+                                        height: 12,
+                                        borderRadius: 6,
+                                        bgcolor: '#e2e8f0',
+                                        '& .MuiLinearProgress-bar': {
+                                            borderRadius: 6,
+                                            background: 'linear-gradient(90deg, #3b82f6 0%, #2563eb 100%)'
+                                        }
+                                    }}
+                                />
+                                <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block', textAlign: 'center' }}>
+                                    You need {nextTier.threshold - profile.pointsBalance} more points to reach {nextTier.name} status
+                                </Typography>
                             </Box>
-                            <LinearProgress variant="determinate" value={progress} sx={{ height: 10, borderRadius: 5 }} />
-                        </Card>
-                    )}
+                        )}
+                    </Box>
                 </Grid>
 
-                {/* Right Column: Wallet & Actions */}
-                <Grid item xs={12} md={7}>
-                    <Typography variant="h5" sx={{ mb: 2 }}>My Wallet</Typography>
-                    <Grid container spacing={2} sx={{ mb: 4 }}>
-                        <Grid item xs={12} sm={4}>
-                            <Card sx={{ height: '100%' }}>
-                                <CardContent>
-                                    <Typography color="text.secondary" gutterBottom>Points Balance</Typography>
-                                    <Typography variant="h4" color="primary">{profile.pointsBalance}</Typography>
-                                    <Box sx={{ mt: 2 }}>
-                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
-                                            <span style={{ color: '#f57c00' }}>Pending</span>
-                                            <span>{profile.pendingPoints}</span>
-                                        </Box>
-                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
-                                            <span style={{ color: '#d32f2f' }}>Expired</span>
-                                            <span>{profile.expiredPoints}</span>
-                                        </Box>
+                {/* Right Column: Actions & Recommendations (Wider) */}
+                <Grid item xs={12} md={9}>
+                    <Box sx={{ mb: 5 }}>
+                        <Typography variant="h5" fontWeight="bold" sx={{ mb: 3 }}>Quick Actions</Typography>
+                        <Grid container spacing={2}>
+                            <Grid item xs={6} sm={4} md={3}>
+                                <ActionTile title="Redeem Rewards" href="/catalog" icon={<redeemIcon.type />} color="#ec4899" />
+                            </Grid>
+                            <Grid item xs={6} sm={4} md={3}>
+                                <ActionTile title="Refer & Earn" href="/referrals" icon={<peopleIcon.type />} color="#8b5cf6" />
+                            </Grid>
+                            <Grid item xs={6} sm={4} md={3}>
+                                <ActionTile title="View History" href="/history" icon={<historyIcon.type />} color="#0ea5e9" />
+                            </Grid>
+                            <Grid item xs={6} sm={4} md={3}>
+                                <ActionTile title="Support" href="/support" icon={<supportIcon.type />} color="#64748b" />
+                            </Grid>
+                        </Grid>
+                    </Box>
+
+                    {/* Recommendations */}
+                    <Box>
+                        <Typography variant="h5" fontWeight="bold" sx={{ mb: 3 }}>For You</Typography>
+                        <Card elevation={0} sx={{ border: '1px solid #e2e8f0', borderRadius: 3, p: 3 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                                <Box sx={{
+                                    width: 80, height: 80,
+                                    bgcolor: '#eff6ff',
+                                    borderRadius: 4,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '2.5rem'
+                                }}>
+                                    🎉
+                                </Box>
+                                <Box sx={{ flexGrow: 1 }}>
+                                    <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 0.5 }}>
+                                        <Typography variant="h6" fontWeight="bold">Exclusive Member Deal</Typography>
+                                        <Chip label="New" size="small" color="primary" sx={{ height: 20, fontSize: '0.625rem' }} />
                                     </Box>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-                        <Grid item xs={12} sm={4}>
-                            <Card sx={{ height: '100%' }}>
-                                <CardContent>
-                                    <Typography color="text.secondary" gutterBottom>Cashback</Typography>
-                                    <Typography variant="h4" sx={{ color: 'success.main' }}>
-                                        ${profile.cashbackBalance?.toFixed(2) || '0.00'}
-                                    </Typography>
-                                    <Typography variant="caption" display="block" sx={{ mt: 1 }}>Available to spend</Typography>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-                        <Grid item xs={12} sm={4}>
-                            <Card sx={{ height: '100%' }}>
-                                <CardContent>
-                                    <Typography color="text.secondary" gutterBottom>Prepaid</Typography>
-                                    <Typography variant="h4" sx={{ color: 'secondary.main' }}>
-                                        ${profile.prepaidBalance?.toFixed(2) || '0.00'}
-                                    </Typography>
-                                    <Typography variant="caption" display="block" sx={{ mt: 1 }}>Top up in store</Typography>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-                    </Grid>
-
-                    <Typography variant="h5" sx={{ mb: 2 }}>Quick Actions</Typography>
-                    <Card sx={{ mb: 4 }}>
-                        <CardContent>
-                            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                                <Button component={Link} href="/catalog" variant="contained" fullWidth>Redeem Rewards</Button>
-                                <Button component={Link} href="/referrals" variant="outlined" fullWidth>Refer & Earn</Button>
-                                <Button component={Link} href="/history" variant="text" fullWidth>History</Button>
-                            </Stack>
-                        </CardContent>
-                    </Card>
-
-                    <Typography variant="h5" sx={{ mb: 2 }}>Recommended</Typography>
-                    <Card>
-                        <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                            <Box sx={{
-                                width: 50, height: 50,
-                                bgcolor: 'primary.light',
-                                borderRadius: 2,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '1.5rem'
-                            }}>
-                                🎁
+                                    <Typography variant="body1" color="text.secondary">Double points on all coffee purchases this weekend! Don't miss out on this limited time offer.</Typography>
+                                </Box>
+                                <Button component={Link} href="/promotions" variant="contained" size="large" sx={{ borderRadius: 2, px: 4 }}>
+                                    Activate
+                                </Button>
                             </Box>
-                            <Box sx={{ flexGrow: 1 }}>
-                                <Typography variant="subtitle1" fontWeight="bold">Personalized Offer</Typography>
-                                <Typography variant="body2" color="text.secondary">Check your inbox for exclusive deals!</Typography>
-                            </Box>
-                            <Button component={Link} href="/inbox" variant="outlined" size="small">View</Button>
-                        </CardContent>
-                    </Card>
+                        </Card>
+                    </Box>
                 </Grid>
             </Grid>
         </Box>
