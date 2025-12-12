@@ -45,9 +45,42 @@ export const authOptions: AuthOptions = {
         strategy: "jwt",
     },
     callbacks: {
+        async jwt({ token, user }) {
+            if (user) {
+                token.id = user.id;
+                // @ts-ignore
+                token.role = user.role;
+                // @ts-ignore
+                token.version = user.tokenVersion || 0;
+            }
+
+            // Verify token version on every request
+            if (token.sub) {
+                const dbUser = await prisma.user.findUnique({
+                    where: { id: token.sub },
+                    select: { tokenVersion: true, role: true }
+                });
+
+                if (!dbUser || (dbUser.tokenVersion || 0) !== (token.version || 0)) {
+                    return {}; // Invalid token
+                }
+
+                // Refresh role in case it changed in DB (e.g. promoted to admin)
+                token.role = dbUser.role;
+            }
+
+            return token;
+        },
         async session({ session, token }) {
+            if (Object.keys(token).length === 0) {
+                return null as any;
+            }
+
             if (session.user && token.sub) {
-                // Any extra session data
+                // @ts-ignore
+                session.user.id = token.sub;
+                // @ts-ignore
+                session.user.role = token.role;
             }
             return session;
         },

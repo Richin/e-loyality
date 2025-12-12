@@ -147,6 +147,22 @@ export default async function DashboardPage() {
                     </div>
                 </Card>
 
+                {/* Recommendations (Client Component would be better for fetching API, but here we can server fetch if we move logic to lib) */}
+                <Card title="Recommended for You">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        <div style={{ padding: '0.75rem', background: '#f8fafc', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <div style={{ width: '40px', height: '40px', background: '#bfdbfe', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🎁</div>
+                            <div>
+                                <h4 style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>Personalized Offer</h4>
+                                <p style={{ fontSize: '0.8rem', color: '#666' }}>Visit your inbox to see your exclusive deals!</p>
+                            </div>
+                        </div>
+                        <Link href="/inbox">
+                            <Button variant="outline" fullWidth size="sm">View Offers</Button>
+                        </Link>
+                    </div>
+                </Card>
+
                 {/* Recent Activity */}
                 <Card title="Recent Activity" className={styles.wideCard}>
                     <div className={styles.emptyState}>

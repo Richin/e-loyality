@@ -16,10 +16,12 @@ model User {
   password      String?
   role          String    @default("USER") // USER, ADMIN
   createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  tokenVersion  Int       @default(0)
+  isSuspended   Boolean   @default(false)
 
   memberProfile MemberProfile?
   feedback      Feedback[]
+  auditLogs     AuditLog[]    @relation("AdminAudit")
 }
 
 model MemberProfile {
@@ -63,6 +65,11 @@ model MemberProfile {
   referrals    MemberProfile[] @relation("Referrals")
 
   createdAt DateTime @default(now())
+
+  // Analytics Feature
+  rfmScore  Int      @default(0)
+  clvValue  Float    @default(0.0)
+  segment   String   @default("NEW") // NEW, VIP, AT_RISK, CHURNED
   updatedAt DateTime @updatedAt
 }
 
@@ -151,6 +158,9 @@ model Campaign {
   variantName String? // "A", "B", "Control"
 
   sentAt    DateTime?
+  
+
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 }
@@ -197,9 +207,30 @@ model Promotion {
 
 model ProgramSetting {
   id          String  @id @default(cuid())
-  settingKey  String  @unique // e.g., "earn_rate", "currency_symbol"
-  value       String // e.g., "1.5", "$"
+  settingKey  String  @unique // e.g., "earn_rate", "currency_symbol", "expiry_type" (ROLLING/FIXED), "expiry_days"
+  value       String // e.g., "1.5", "$", "FIXED", "365"
   description String?
+}
+
+model LoyaltyRule {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  type        String   @default("SPEND") // SPEND, VISIT, PRODUCT, BIRTHDAY, SIGNUP, ANNIVERSARY
+  
+  // Rule Logic
+  multiplier  Float    @default(1.0) // For SPEND: Points per Currency Unit
+  bonusPoints Int      @default(0)   // For EVENTS: Fixed points
+  
+  minSpend    Float?   // Minimum spend to trigger
+  productId   String?  // Specific product trigger
+  
+  startDate   DateTime?
+  endDate     DateTime?
+  
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Feedback {
@@ -318,4 +349,35 @@ model Notification {
   message         String        @db.Text
   isRead          Boolean       @default(false)
   createdAt       DateTime      @default(now())
+}
+
+model Store {
+  id          String   @id @default(cuid())
+  name        String
+  address     String
+  city        String
+  postalCode  String
+  
+  latitude    Float
+  longitude   Float
+  
+  phone       String?
+  email       String?
+  openingHours String? // Text description e.g. "Mon-Fri: 9am-9pm"
+  
+  imageUrl    String?
+  
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  adminId   String
+  admin     User     @relation("AdminAudit", fields: [adminId], references: [id])
+  targetId  String?  // ID of user/resource affected
+  action    String   // POINT_ADJUST, TIER_FORCE, SUSPEND, MERGE
+  details   String?  @db.Text
+  createdAt DateTime @default(now())
 }

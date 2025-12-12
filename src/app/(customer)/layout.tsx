@@ -25,7 +25,13 @@ export default async function CustomerLayout({
                         <Link href="/achievements">Achievements</Link>
                         <Link href="/referrals">Referrals</Link>
                         <Link href="/support">Support</Link>
-                        <Link href="/notifications">Alerts</Link>
+                        <Link href="/inbox">Inbox</Link>
+                        <Link href="/stores">Stores</Link>
+                        <Link href="/settings">Settings</Link>
+                        {/* @ts-ignore */}
+                        {session?.user?.role === 'ADMIN' && (
+                            <Link href="/admin/dashboard" style={{ color: '#2563eb', fontWeight: 'bold' }}>Admin</Link>
+                        )}
                     </nav>
 
                     <AuthButtons session={session} />
