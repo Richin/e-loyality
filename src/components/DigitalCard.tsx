@@ -3,7 +3,12 @@
 import React, { useRef, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import html2canvas from 'html2canvas';
+import Box from '@mui/material/Box';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
+import Divider from '@mui/material/Divider';
 import Button from '@mui/material/Button';
+import { alpha } from '@mui/material/styles';
 
 interface DigitalCardProps {
     name: string;
@@ -12,33 +17,39 @@ interface DigitalCardProps {
     points: number;
 }
 
+const tierThemes = {
+    GOLD: {
+        gradient: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 60%, #d97706 100%)',
+        shadow: 'rgba(217, 119, 6, 0.45)',
+        accent: '#fff7ed',
+        on: '#2f1b03',
+    },
+    SILVER: {
+        gradient: 'linear-gradient(135deg, #d1d5db 0%, #9ca3af 60%, #6b7280 100%)',
+        shadow: 'rgba(55, 65, 81, 0.35)',
+        accent: '#f9fafb',
+        on: '#1f2937',
+    },
+    PLATINUM: {
+        gradient: 'linear-gradient(135deg, #f3f4f6 0%, #d1d5db 55%, #9ca3af 100%)',
+        shadow: 'rgba(100, 116, 139, 0.35)',
+        accent: '#f1f5f9',
+        on: '#0f172a',
+    },
+    DEFAULT: {
+        gradient: 'linear-gradient(135deg, #1f2937 0%, #111827 60%, #0f172a 100%)',
+        shadow: 'rgba(15, 23, 42, 0.45)',
+        accent: '#1f2937',
+        on: '#f8fafc',
+    },
+} as const;
+
 export default function DigitalCard({ name, memberId, tier, points }: DigitalCardProps) {
     const cardRef = useRef<HTMLDivElement>(null);
     const [downloading, setDownloading] = useState(false);
 
-    // Premium Gradients
-    const getTierStyle = (tier: string) => {
-        switch (tier.toUpperCase()) {
-            case 'GOLD': return {
-                background: 'linear-gradient(135deg, #BF953F 0%, #FCF6BA 40%, #B38728 60%, #AA771C 100%)', // Gold metallic
-                text: '#4a3b10'
-            };
-            case 'PLATINUM': return {
-                background: 'linear-gradient(135deg, #e0e0e0 0%, #ffffff 40%, #bdc3c7 60%, #7f8c8d 100%)', // Platinum
-                text: '#2c3e50'
-            };
-            case 'SILVER': return {
-                background: 'linear-gradient(135deg, #C0C0C0 0%, #E8E8E8 40%, #A9A9A9 60%, #808080 100%)', // Silver
-                text: '#2c3e50'
-            };
-            default: return {
-                background: 'linear-gradient(135deg, #1c1c1c 0%, #434343 100%)', // Matte Black (Bronze/Standard)
-                text: '#ffffff'
-            };
-        }
-    };
-
-    const theme = getTierStyle(tier);
+    const themeKey = (tier?.toUpperCase() as keyof typeof tierThemes) ?? 'DEFAULT';
+    const theme = tierThemes[themeKey] ?? tierThemes.DEFAULT;
 
     const handleDownload = async () => {
         if (!cardRef.current) return;
@@ -46,108 +57,137 @@ export default function DigitalCard({ name, memberId, tier, points }: DigitalCar
         try {
             const canvas = await html2canvas(cardRef.current, {
                 useCORS: true,
-                scale: 3, // High Res
+                scale: 3,
                 backgroundColor: null,
             });
-            const image = canvas.toDataURL("image/png");
-            const link = document.createElement("a");
+            const image = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
             link.href = image;
             link.download = `e-loyalty-card-${memberId}.png`;
             link.click();
-        } catch (err) {
-            console.error("Failed to download card:", err);
-            alert("Failed to download card. Please try again.");
+        } catch (error) {
+            console.error('Failed to download card:', error);
+            alert('Failed to download card. Please try again.');
         } finally {
             setDownloading(false);
         }
     };
 
+    const formattedMemberId = memberId.match(/.{1,4}/g)?.join(' • ') ?? memberId;
+
     return (
-        <div style={{ perspective: '1000px' }}>
-            {/* Card Container */}
-            <div ref={cardRef} style={{
-                background: theme.background,
-                borderRadius: '20px',
-                padding: '24px',
-                color: theme.text,
-                boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
-                marginBottom: '1.5rem',
-                position: 'relative',
-                overflow: 'hidden',
-                aspectRatio: '1.586 / 1', // Credit card ratio
-                minHeight: '220px',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                transition: 'transform 0.3s ease',
-            }}
-                className="digital-card"
+        <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+            <Box
+                ref={cardRef}
+                sx={{
+                    position: 'relative',
+                    borderRadius: '26px',
+                    p: { xs: 3, md: 4 },
+                    color: theme.on,
+                    backgroundImage: theme.gradient,
+                    boxShadow: `0 24px 48px -20px ${theme.shadow}`,
+                    overflow: 'hidden',
+                    minHeight: { xs: 200, md: 185 },
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 2,
+                    flexGrow: 1,
+                }}
             >
-                {/* Glassmorphism Shine */}
-                <div style={{
-                    position: 'absolute',
-                    top: '-50%',
-                    left: '-50%',
-                    width: '200%',
-                    height: '200%',
-                    background: 'radial-gradient(circle at 50% 50%, rgba(255,255,255,0.2) 0%, transparent 60%)',
-                    pointerEvents: 'none'
-                }} />
+                <Box
+                    sx={{
+                        position: 'absolute',
+                        inset: 0,
+                        background: `radial-gradient(circle at 15% 20%, ${alpha('#ffffff', 0.25)}, transparent 55%)`,
+                    }}
+                />
 
-                {/* Header: Chip + Tier */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', zIndex: 2 }}>
-                    {/* Fake EMV Chip */}
-                    <div style={{
-                        width: '45px',
-                        height: '35px',
-                        background: 'linear-gradient(135deg, #d4af37 0%, #a08020 100%)',
-                        borderRadius: '6px',
-                        border: '1px solid rgba(0,0,0,0.1)',
-                        position: 'relative'
-                    }}>
-                        <div style={{ position: 'absolute', top: '30%', left: 0, right: 0, height: '1px', background: 'rgba(0,0,0,0.2)' }} />
-                        <div style={{ position: 'absolute', top: 0, bottom: 0, left: '30%', width: '1px', background: 'rgba(0,0,0,0.2)' }} />
-                        <div style={{ position: 'absolute', top: '30%', bottom: 0, right: '35%', width: '1px', background: 'rgba(0,0,0,0.2)' }} />
-                        <div style={{ position: 'absolute', top: 0, bottom: '30%', left: '35%', width: '1px', background: 'rgba(0,0,0,0.2)' }} />
-                    </div>
+                <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ position: 'relative' }}>
+                    <Box>
+                        <Typography variant="caption" sx={{ textTransform: 'uppercase', letterSpacing: 2, opacity: 0.7 }}>
+                            Loyalty Tier
+                        </Typography>
+                        <Typography variant="h6" fontWeight={700}>
+                            {tier}
+                        </Typography>
+                    </Box>
+                    <Box
+                        sx={{
+                            width: 56,
+                            height: 40,
+                            borderRadius: 2,
+                            background: alpha('#fef3c7', 0.6),
+                            border: `1px solid ${alpha('#000', 0.1)}`,
+                            position: 'relative',
+                        }}
+                    >
+                        <Box sx={{ position: 'absolute', inset: '12%', border: `1px solid ${alpha('#000', 0.1)}` }} />
+                        <Box sx={{ position: 'absolute', inset: '0 36% 0 36%', backgroundColor: alpha('#000', 0.12) }} />
+                        <Box sx={{ position: 'absolute', inset: '45% 0 45% 0', backgroundColor: alpha('#000', 0.12) }} />
+                    </Box>
+                </Stack>
 
-                    <div style={{
-                        fontSize: '1rem',
-                        fontWeight: 800,
-                        letterSpacing: '2px',
-                        textTransform: 'uppercase',
-                        opacity: 0.8
-                    }}>
-                        {tier}
-                    </div>
-                </div>
+                <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ xs: 'flex-start', sm: 'center' }} justifyContent="space-between" spacing={3} sx={{ position: 'relative' }}>
+                    <Box>
+                        <Typography variant="caption" sx={{ textTransform: 'uppercase', letterSpacing: 1.5, opacity: 0.6 }}>
+                            Card holder
+                        </Typography>
+                        <Typography variant="h5" fontWeight={700} sx={{ letterSpacing: 1, textTransform: 'uppercase' }}>
+                            {name}
+                        </Typography>
+                        <Typography variant="caption" sx={{ textTransform: 'uppercase', letterSpacing: 1.5, opacity: 0.6, display: 'block', mt: 2 }}>
+                            Member ID
+                        </Typography>
+                        <Typography variant="subtitle1" fontWeight={600} sx={{ letterSpacing: 2, fontFamily: 'monospace' }}>
+                            {formattedMemberId}
+                        </Typography>
+                    </Box>
 
-                {/* Middle: ID */}
-                <div style={{ zIndex: 2, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '2rem' }}>
-                    <div style={{ fontFamily: '"Courier New", Courier, monospace', fontSize: '1.4rem', letterSpacing: '3px', fontWeight: 'bold', textShadow: '0 1px 1px rgba(0,0,0,0.2)' }}>
-                        {memberId.match(/.{1,4}/g)?.join(' ') || memberId}
-                    </div>
-                </div>
+                    <Box
+                        sx={{
+                            bgcolor: alpha(theme.accent, 0.9),
+                            borderRadius: 4,
+                            p: 1.5,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: 1,
+                        }}
+                    >
+                        <QRCodeSVG value={memberId} size={96} />
+                        <Typography variant="caption" sx={{ textTransform: 'uppercase', letterSpacing: 1.6, color: theme.on }}>
+                            Scan for perks
+                        </Typography>
+                    </Box>
+                </Stack>
 
-                {/* Footer: Name + QR + Points */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', zIndex: 2 }}>
-                    <div>
-                        <div style={{ fontSize: '0.6rem', textTransform: 'uppercase', opacity: 0.7, marginBottom: '2px' }}>Card Holder</div>
-                        <div style={{ fontSize: '1rem', fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' }}>{name}</div>
-                    </div>
+                <Divider flexItem sx={{ borderColor: alpha(theme.on, 0.2) }} />
 
-                    <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: '0.6rem', textTransform: 'uppercase', opacity: 0.7, marginBottom: '2px' }}>Points Balance</div>
-                        <div style={{ fontSize: '1.2rem', fontWeight: 800 }}>{points.toLocaleString()}</div>
-                    </div>
-                </div>
-            </div>
+                <Stack direction="row" justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} sx={{ position: 'relative' }}>
+                    <Box>
+                        <Typography variant="caption" sx={{ textTransform: 'uppercase', letterSpacing: 1.5, opacity: 0.6 }}>
+                            Points balance
+                        </Typography>
+                        <Typography variant="h4" fontWeight={800}>
+                            {points.toLocaleString()} pts
+                        </Typography>
+                    </Box>
+                    <Box sx={{ textAlign: 'right' }}>
+                        <Typography variant="caption" sx={{ textTransform: 'uppercase', letterSpacing: 1.5, opacity: 0.6 }}>
+                            Customer care
+                        </Typography>
+                        <Typography variant="subtitle2" fontWeight={600}>
+                            loyalty@e-loyalty.app
+                        </Typography>
+                    </Box>
+                </Stack>
+            </Box>
 
-            <div style={{ textAlign: 'center', marginTop: -10 }}>
-                <Button variant="text" size="small" onClick={handleDownload} disabled={downloading} sx={{ textTransform: 'none', color: '#666' }}>
-                    {downloading ? 'Prepare download...' : 'Download / Print Card'}
+            <Box sx={{ textAlign: 'right', mt: 1 }}>
+                <Button variant="outlined" size="small" onClick={handleDownload} disabled={downloading}>
+                    {downloading ? 'Preparing card…' : 'Download card'}
                 </Button>
-            </div>
-        </div>
+            </Box>
+        </Box>
     );
 }

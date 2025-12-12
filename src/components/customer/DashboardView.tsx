@@ -1,196 +1,590 @@
 
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import Link from 'next/link';
 import DigitalCard from '@/components/DigitalCard';
 import StatCard from '@/components/customer/StatCard';
 import ActionTile from '@/components/customer/ActionTile';
 
-// MUI Imports
-import Grid from '@mui/material/Grid';
-import Card from '@mui/material/Card';
-import Typography from '@mui/material/Typography';
-import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
-import LinearProgress from '@mui/material/LinearProgress';
+import Paper from '@mui/material/Paper';
+import Typography from '@mui/material/Typography';
 import Chip from '@mui/material/Chip';
+import LinearProgress from '@mui/material/LinearProgress';
+import Stack from '@mui/material/Stack';
+import Divider from '@mui/material/Divider';
+import Button from '@mui/material/Button';
+import Avatar from '@mui/material/Avatar';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import Tooltip from '@mui/material/Tooltip';
+import CardGiftcardRoundedIcon from '@mui/icons-material/CardGiftcardRounded';
+import HistoryRoundedIcon from '@mui/icons-material/HistoryRounded';
+import PeopleAltRoundedIcon from '@mui/icons-material/PeopleAltRounded';
+import SupportAgentRoundedIcon from '@mui/icons-material/SupportAgentRounded';
+import AccountBalanceWalletRoundedIcon from '@mui/icons-material/AccountBalanceWalletRounded';
+import LoyaltyRoundedIcon from '@mui/icons-material/LoyaltyRounded';
+import CreditCardRoundedIcon from '@mui/icons-material/CreditCardRounded';
+import TrendingUpRoundedIcon from '@mui/icons-material/TrendingUpRounded';
+import RedeemRoundedIcon from '@mui/icons-material/RedeemRounded';
+import StarOutlineRoundedIcon from '@mui/icons-material/StarOutlineRounded';
+import ScheduleRoundedIcon from '@mui/icons-material/ScheduleRounded';
+import ReceiptLongRoundedIcon from '@mui/icons-material/ReceiptLongRounded';
 
-// Icons
-import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
-import LoyaltyIcon from '@mui/icons-material/Loyalty';
-import CreditCardIcon from '@mui/icons-material/CreditCard';
-import redeemIcon from '@mui/icons-material/CardGiftcard';
-import historyIcon from '@mui/icons-material/History';
-import peopleIcon from '@mui/icons-material/People';
-import supportIcon from '@mui/icons-material/SupportAgent';
-
-
-interface DashboardViewProps {
-    user: {
-        name: string | null;
-        email: string | null;
-        role: string;
-    };
-    profile: {
-        id: string;
-        pointsBalance: number;
-        pendingPoints: number;
-        expiredPoints: number;
-        pointsExpiryDate: Date | null;
-        cashbackBalance: number | null;
-        prepaidBalance: number | null;
-        tier: {
-            name: string;
-        } | null;
-    };
+interface RewardItem {
+    id: string;
+    name: string;
+    description: string | null;
+    pointsCost: number;
+    category: string;
 }
 
-export default function DashboardView({ user, profile }: DashboardViewProps) {
-    // Calculate Tier Progress
-    const nextTier = user.role === 'ADMIN' ? null : (
-        profile.pointsBalance < 1000 ? { name: 'Silver', threshold: 1000 } :
-            profile.pointsBalance < 5000 ? { name: 'Gold', threshold: 5000 } : null
-    );
+interface ActivityItem {
+    id: string;
+    description: string | null;
+    type: string;
+    points: number;
+    createdAt: string;
+    storeName: string | null;
+}
+
+interface DashboardStats {
+    monthEarned: number;
+    monthRedeemed: number;
+    netPoints: number;
+    openTickets: number;
+}
+
+interface DashboardProfile {
+    id: string;
+    pointsBalance: number;
+    pendingPoints: number;
+    expiredPoints: number;
+    pointsExpiryDate: string | null;
+    cashbackBalance: number;
+    prepaidBalance: number;
+    currentStreak?: number;
+    lastVisitDate?: string | null;
+    tier: {
+        name: string;
+    } | null;
+}
+
+interface DashboardUser {
+    name: string | null;
+    email: string | null;
+    role: string;
+}
+
+interface DashboardViewProps {
+    user: DashboardUser;
+    profile: DashboardProfile;
+    recentActivity: ActivityItem[];
+    featuredRewards: RewardItem[];
+    stats: DashboardStats;
+}
+
+const DATE_FORMATTER = new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+});
+
+const DAY_FORMATTER = new Intl.DateTimeFormat('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+});
+
+export default function DashboardView({ user, profile, recentActivity, featuredRewards, stats }: DashboardViewProps) {
+    const friendlyName = user.name?.split(' ')[0] ?? 'there';
+
+    const nextTier = useMemo(() => {
+        if (user.role?.toUpperCase().includes('ADMIN')) return null;
+        if (profile.pointsBalance < 1000) return { name: 'Silver', threshold: 1000 };
+        if (profile.pointsBalance < 5000) return { name: 'Gold', threshold: 5000 };
+        return null;
+    }, [profile.pointsBalance, user.role]);
 
     const progress = nextTier ? Math.min((profile.pointsBalance / nextTier.threshold) * 100, 100) : 100;
+    const expiryDate = profile.pointsExpiryDate ? new Date(profile.pointsExpiryDate) : null;
+    const expiryLabel = expiryDate ? DATE_FORMATTER.format(expiryDate) : 'No points expiring soon';
+
+    const lastVisit = profile.lastVisitDate ? new Date(profile.lastVisitDate) : null;
+    const lastVisitLabel = lastVisit ? DATE_FORMATTER.format(lastVisit) : 'No recent visits logged';
+
+    const insightCards = [
+        {
+            title: 'Points earned this month',
+            value: `${stats.monthEarned.toLocaleString()} pts`,
+            caption: 'Includes bonus campaigns',
+            icon: TrendingUpRoundedIcon,
+            color: 'primary.main',
+        },
+        {
+            title: 'Points redeemed',
+            value: `${stats.monthRedeemed.toLocaleString()} pts`,
+            caption: 'Rewards claimed this month',
+            icon: RedeemRoundedIcon,
+            color: 'secondary.main',
+        },
+        {
+            title: 'Net balance change',
+            value: `${stats.netPoints >= 0 ? '+' : '-'}${Math.abs(stats.netPoints).toLocaleString()} pts`,
+            caption: 'After redemptions',
+            icon: StarOutlineRoundedIcon,
+            color: stats.netPoints >= 0 ? 'success.main' : 'error.main',
+        },
+    ];
+
+    const quickActions = [
+        {
+            title: 'Redeem rewards',
+            href: '/catalog',
+            icon: CardGiftcardRoundedIcon,
+            color: 'primary.main',
+            description: 'Browse the latest catalog',
+        },
+        {
+            title: 'Refer & earn',
+            href: '/referrals',
+            icon: PeopleAltRoundedIcon,
+            color: 'secondary.main',
+            description: 'Invite friends to join',
+        },
+        {
+            title: 'View history',
+            href: '/history',
+            icon: HistoryRoundedIcon,
+            color: 'info.main',
+            description: 'Track your transactions',
+        },
+        {
+            title: 'Need support?',
+            href: '/support',
+            icon: SupportAgentRoundedIcon,
+            color: 'warning.main',
+            description: stats.openTickets > 0 ? `${stats.openTickets} ticket(s) open` : 'Chat with the team',
+        },
+    ];
 
     return (
-        <Box>
-            {/* Hero Welcome */}
-            <Box sx={{ mb: 6, textAlign: 'center' }}>
-                <Typography variant="h3" fontWeight="800" sx={{ background: 'linear-gradient(45deg, #1e293b 30%, #3b82f6 90%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', mb: 1 }}>
-                    Hello, {user.name?.split(' ')[0]}
-                </Typography>
-                <Typography color="text.secondary" variant="h6">
-                    Here is your membership overview for today.
-                </Typography>
-            </Box>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+            <Box
+                sx={{
+                    display: 'flex',
+                    flexDirection: { xs: 'column', lg: 'row' },
+                    gap: { xs: 3, lg: 4 },
+                    alignItems: 'stretch',
+                }}
+            >
+                <Box sx={{ flex: '1 1 0%', display: 'flex' }}>
+                    <Paper
+                        elevation={0}
+                        sx={{
+                            borderRadius: '28px',
+                            px: { xs: 3, md: 4 },
+                            py: { xs: 1.75, md: 2.5 },
+                            position: 'relative',
+                            overflow: 'hidden',
+                            background: 'linear-gradient(135deg, #1d4ed8 0%, #4338ca 60%, #7c3aed 100%)',
+                            color: 'white',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'space-between',
+                            minHeight: { xs: 200, md: 185 },
+                            width: '100%',
+                        }}
+                    >
+                        <Box
+                            sx={{
+                                position: 'absolute',
+                                inset: 0,
+                                background: 'radial-gradient(circle at 20% 20%, rgba(255,255,255,0.18), transparent 55%)',
+                            }}
+                        />
+                        <Stack spacing={2} sx={{ position: 'relative' }}>
+                            <Stack direction="row" spacing={1.5} alignItems="center">
+                                <Chip
+                                    label={`Tier ${profile.tier?.name ?? 'Member'}`}
+                                    color="secondary"
+                                    variant="filled"
+                                    sx={{ bgcolor: 'rgba(255,255,255,0.18)', color: 'white', fontWeight: 600 }}
+                                />
+                                <Chip
+                                    label={DAY_FORMATTER.format(new Date())}
+                                    variant="outlined"
+                                    sx={{ borderColor: 'rgba(255,255,255,0.4)', color: 'white', fontWeight: 500 }}
+                                />
+                            </Stack>
 
-            {/* Top Row: My Wallet (Full Width) */}
-            <Box sx={{ mb: 5 }}>
-                <Typography variant="h5" fontWeight="bold" sx={{ mb: 3 }}>My Wallet</Typography>
-                <Grid container spacing={3}>
-                    <Grid item xs={12} sm={4}>
-                        <StatCard
-                            title="Loyalty Points"
-                            value={profile.pointsBalance.toLocaleString()}
-                            icon={<LoyaltyIcon />}
-                            color="#f59e0b" // Amber
-                            subtitle={`${profile.pendingPoints} Pending`}
-                        />
-                    </Grid>
-                    <Grid item xs={12} sm={4}>
-                        <StatCard
-                            title="Cashback"
-                            value={`$${profile.cashbackBalance?.toFixed(2) || '0.00'}`}
-                            icon={<AccountBalanceWalletIcon />}
-                            color="#10b981" // Emerald
-                            subtitle="Available to spend"
-                        />
-                    </Grid>
-                    <Grid item xs={12} sm={4}>
-                        <StatCard
-                            title="Prepaid Balance"
-                            value={`$${profile.prepaidBalance?.toFixed(2) || '0.00'}`}
-                            icon={<CreditCardIcon />}
-                            color="#6366f1" // Indigo
-                            subtitle="Auto-reload is OFF"
-                        />
-                    </Grid>
-                </Grid>
-            </Box>
+                            <Typography variant="h4" fontWeight={700} sx={{ maxWidth: 420, lineHeight: 1.35 }}>
+                                Welcome back, {friendlyName}. Here’s a quick look at your loyalty journey today.
+                            </Typography>
 
-            <Grid container spacing={4}>
-                {/* Left Column: Digital Card & Status (Smaller now that wallet is gone) */}
-                <Grid item xs={12} md={3}>
-                    <Box sx={{ position: 'sticky', top: 100 }}>
-                        <Typography variant="h5" fontWeight="bold" sx={{ mb: 3 }}>My Card</Typography>
-                        <DigitalCard
-                            name={user.name || 'Valued Member'}
-                            memberId={profile.id}
-                            tier={profile.tier?.name || 'Bronze'}
-                            points={profile.pointsBalance}
-                        />
-
-                        {nextTier && (
-                            <Box sx={{ mt: 4, px: 2 }}>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, alignItems: 'flex-end' }}>
-                                    <Typography variant="subtitle2" color="text.secondary">Next Tier: {nextTier.name}</Typography>
-                                    <Typography variant="h6" fontWeight="bold" color="primary">{profile.pointsBalance} / {nextTier.threshold}</Typography>
-                                </Box>
+                            <Stack spacing={1.5}>
+                                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                                    <Typography variant="subtitle2" sx={{ opacity: 0.8 }}>
+                                        {nextTier ? `Progress to ${nextTier.name}` : 'Elite status unlocked'}
+                                    </Typography>
+                                    <Typography variant="subtitle1" fontWeight={700}>
+                                        {nextTier
+                                            ? `${profile.pointsBalance.toLocaleString()} / ${nextTier.threshold.toLocaleString()} pts`
+                                            : `${profile.pointsBalance.toLocaleString()} pts`}
+                                    </Typography>
+                                </Stack>
                                 <LinearProgress
                                     variant="determinate"
                                     value={progress}
                                     sx={{
-                                        height: 12,
-                                        borderRadius: 6,
-                                        bgcolor: '#e2e8f0',
+                                        height: 10,
+                                        borderRadius: 5,
+                                        bgcolor: 'rgba(255,255,255,0.25)',
                                         '& .MuiLinearProgress-bar': {
-                                            borderRadius: 6,
-                                            background: 'linear-gradient(90deg, #3b82f6 0%, #2563eb 100%)'
-                                        }
+                                            bgcolor: 'white',
+                                        },
                                     }}
                                 />
-                                <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block', textAlign: 'center' }}>
-                                    You need {nextTier.threshold - profile.pointsBalance} more points to reach {nextTier.name} status
+                                <Typography variant="body2" sx={{ opacity: 0.75 }}>
+                                    {nextTier
+                                        ? `Only ${(nextTier.threshold - profile.pointsBalance).toLocaleString()} points away from ${nextTier.name} status.`
+                                        : 'You’re enjoying our highest tier benefits. Keep exploring exclusive perks!'}
                                 </Typography>
+                            </Stack>
+
+                            <Divider light sx={{ borderColor: 'rgba(255,255,255,0.25)' }} />
+
+                            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                                <Box>
+                                    <Typography variant="h6" fontWeight={700}>
+                                        {profile.pointsBalance.toLocaleString()} pts
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ opacity: 0.75 }}>
+                                        Total balance available
+                                    </Typography>
+                                </Box>
+
+                                <Box>
+                                    <Typography variant="h6" fontWeight={700}>
+                                        {profile.pendingPoints.toLocaleString()} pts
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ opacity: 0.75 }}>
+                                        Pending approval
+                                    </Typography>
+                                </Box>
+
+                                <Box>
+                                    <Typography variant="h6" fontWeight={700}>
+                                        {expiryLabel}
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ opacity: 0.75 }}>
+                                        Next expiry
+                                    </Typography>
+                                </Box>
+                            </Stack>
+                        </Stack>
+                    </Paper>
+                </Box>
+
+                <Box sx={{ flex: '1 1 0%', display: 'flex', alignItems: 'stretch' }}>
+                    <DigitalCard
+                        name={user.name || 'Valued Member'}
+                        memberId={profile.id}
+                        tier={profile.tier?.name || 'Bronze'}
+                        points={profile.pointsBalance}
+                    />
+                </Box>
+            </Box>
+
+            <Box>
+                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+                    <Typography variant="h5" fontWeight={700}>
+                        Wallet overview
+                    </Typography>
+                </Stack>
+                <Box
+                    sx={{
+                        display: 'grid',
+                        gap: 3,
+                        gridTemplateColumns: {
+                            xs: 'repeat(1, minmax(0, 1fr))',
+                            sm: 'repeat(2, minmax(0, 1fr))',
+                            md: 'repeat(3, minmax(0, 1fr))',
+                            xl: 'repeat(6, minmax(0, 1fr))',
+                        },
+                    }}
+                >
+                    <Box>
+                        <StatCard
+                            title="Loyalty points"
+                            value={profile.pointsBalance.toLocaleString()}
+                            icon={<LoyaltyRoundedIcon />}
+                            color="#f59e0b"
+                            subtitle={`${profile.pendingPoints.toLocaleString()} pending approval`}
+                        />
+                    </Box>
+                    <Box>
+                        <StatCard
+                            title="Cashback balance"
+                            value={`$${profile.cashbackBalance.toFixed(2)}`}
+                            icon={<AccountBalanceWalletRoundedIcon />}
+                            color="#10b981"
+                            subtitle="Available to spend"
+                        />
+                    </Box>
+                    <Box>
+                        <StatCard
+                            title="Prepaid wallet"
+                            value={`$${profile.prepaidBalance.toFixed(2)}`}
+                            icon={<CreditCardRoundedIcon />}
+                            color="#6366f1"
+                            subtitle="Top up anytime"
+                        />
+                    </Box>
+                    {insightCards.map((card) => (
+                        <Paper
+                            key={card.title}
+                            elevation={0}
+                            sx={{
+                                borderRadius: 4,
+                                p: 3,
+                                border: '1px solid',
+                                borderColor: 'divider',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: 2,
+                                height: '100%',
+                            }}
+                        >
+                            <Stack direction="row" spacing={2} alignItems="center">
+                                <Avatar
+                                    variant="rounded"
+                                    sx={{
+                                        bgcolor: `${card.color}15`,
+                                        color: card.color,
+                                        borderRadius: 2,
+                                        width: 44,
+                                        height: 44,
+                                    }}
+                                >
+                                    <card.icon fontSize="medium" />
+                                </Avatar>
+                                <Typography variant="subtitle2" color="text.secondary">
+                                    {card.title}
+                                </Typography>
+                            </Stack>
+                            <Typography variant="h4" fontWeight={700}>
+                                {card.value}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                {card.caption}
+                            </Typography>
+                        </Paper>
+                    ))}
+                </Box>
+            </Box>
+
+            <Box>
+                <Typography variant="h5" fontWeight={700} sx={{ mb: 3 }}>
+                    Quick actions
+                </Typography>
+                <Box
+                    sx={{
+                        display: 'grid',
+                        gap: 2,
+                        gridTemplateColumns: {
+                            xs: 'repeat(1, minmax(0, 1fr))',
+                            sm: 'repeat(2, minmax(0, 1fr))',
+                            md: 'repeat(4, minmax(0, 1fr))',
+                        },
+                    }}
+                >
+                    {quickActions.map((action) => (
+                        <ActionTile key={action.title} {...action} />
+                    ))}
+                </Box>
+            </Box>
+
+            <Box
+                sx={{
+                    display: 'flex',
+                    flexDirection: { xs: 'column', lg: 'row' },
+                    gap: { xs: 3, lg: 4 },
+                    alignItems: 'stretch',
+                }}
+            >
+                <Box sx={{ flex: { xs: '1 1 auto', lg: '0 0 38%' } }}>
+                    <Paper elevation={0} sx={{ borderRadius: 4, p: 3, border: '1px solid', borderColor: 'divider', height: '100%' }}>
+                        <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 3 }}>
+                            <ReceiptLongRoundedIcon color="primary" />
+                            <Typography variant="h6" fontWeight={700}>
+                                Recent activity
+                            </Typography>
+                        </Stack>
+                        {recentActivity.length === 0 ? (
+                            <Box sx={{ py: 6, textAlign: 'center', color: 'text.secondary' }}>
+                                <Typography variant="body2">No transactions yet. Start earning points to see your history here.</Typography>
+                            </Box>
+                        ) : (
+                            <TableContainer sx={{ borderRadius: 3 }}>
+                                <Table size="small">
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell>Activity</TableCell>
+                                            <TableCell>Date</TableCell>
+                                            <TableCell align="right">Points</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {recentActivity.map((item) => {
+                                            const created = DATE_FORMATTER.format(new Date(item.createdAt));
+                                            const positive = item.points >= 0;
+                                            return (
+                                                <TableRow key={item.id}>
+                                                    <TableCell>
+                                                        <Stack spacing={0.5}>
+                                                            <Typography variant="subtitle2" fontWeight={600}>
+                                                                {item.description || item.type}
+                                                            </Typography>
+                                                            <Typography variant="caption" color="text.secondary">
+                                                                {item.storeName || 'Online'}
+                                                            </Typography>
+                                                        </Stack>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Typography variant="body2">{created}</Typography>
+                                                    </TableCell>
+                                                    <TableCell align="right">
+                                                        <Typography
+                                                            variant="body2"
+                                                            fontWeight={700}
+                                                            color={positive ? 'success.main' : 'error.main'}
+                                                        >
+                                                            {positive ? '+' : ''}
+                                                            {item.points.toLocaleString()} pts
+                                                        </Typography>
+                                                    </TableCell>
+                                                </TableRow>
+                                            );
+                                        })}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                        )}
+                        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+                            <Button component={Link} href="/history" size="small">
+                                View full history
+                            </Button>
+                        </Box>
+                    </Paper>
+                </Box>
+
+                <Box sx={{ flex: { xs: '1 1 auto', lg: '1 1 0%' } }}>
+                    <Paper elevation={0} sx={{ borderRadius: 4, p: 3, border: '1px solid', borderColor: 'divider', height: '100%' }}>
+                        <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 3 }}>
+                            <ScheduleRoundedIcon color="primary" />
+                            <Typography variant="h6" fontWeight={700}>
+                                Handpicked rewards for you
+                            </Typography>
+                        </Stack>
+
+                        <Box
+                            sx={{
+                                display: 'grid',
+                                gap: 2,
+                                gridTemplateColumns: {
+                                    xs: 'repeat(1, minmax(0, 1fr))',
+                                    md: 'repeat(3, minmax(0, 1fr))',
+                                },
+                            }}
+                        >
+                            {featuredRewards.map((reward) => (
+                                <Paper
+                                    key={reward.id}
+                                    elevation={0}
+                                    sx={{
+                                        p: 2.5,
+                                        borderRadius: 3,
+                                        height: '100%',
+                                        border: '1px solid',
+                                        borderColor: 'divider',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: 1.5,
+                                    }}
+                                >
+                                    <Stack spacing={1}>
+                                        <Chip
+                                            label={reward.category}
+                                            size="small"
+                                            sx={{
+                                                alignSelf: 'flex-start',
+                                                bgcolor: 'primary.light',
+                                                color: 'primary.contrastText',
+                                                fontWeight: 600,
+                                            }}
+                                        />
+                                        <Typography variant="subtitle1" fontWeight={700}>
+                                            {reward.name}
+                                        </Typography>
+                                        {reward.description && (
+                                            <Typography variant="body2" color="text.secondary">
+                                                {reward.description}
+                                            </Typography>
+                                        )}
+                                    </Stack>
+                                    <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 'auto' }}>
+                                        <Chip
+                                            label={`${reward.pointsCost.toLocaleString()} pts`}
+                                            color="primary"
+                                            variant="outlined"
+                                            sx={{ fontWeight: 600 }}
+                                        />
+                                        <Button component={Link} href="/catalog" size="small">
+                                            View reward
+                                        </Button>
+                                    </Stack>
+                                </Paper>
+                            ))}
+                        </Box>
+
+                        {featuredRewards.length === 0 && (
+                            <Box sx={{ py: 6, textAlign: 'center', color: 'text.secondary' }}>
+                                <Typography variant="body2">No featured rewards right now. Check back soon for new offers.</Typography>
                             </Box>
                         )}
-                    </Box>
-                </Grid>
+                    </Paper>
+                </Box>
+            </Box>
 
-                {/* Right Column: Actions & Recommendations (Wider) */}
-                <Grid item xs={12} md={9}>
-                    <Box sx={{ mb: 5 }}>
-                        <Typography variant="h5" fontWeight="bold" sx={{ mb: 3 }}>Quick Actions</Typography>
-                        <Grid container spacing={2}>
-                            <Grid item xs={6} sm={4} md={3}>
-                                <ActionTile title="Redeem Rewards" href="/catalog" icon={<redeemIcon.type />} color="#ec4899" />
-                            </Grid>
-                            <Grid item xs={6} sm={4} md={3}>
-                                <ActionTile title="Refer & Earn" href="/referrals" icon={<peopleIcon.type />} color="#8b5cf6" />
-                            </Grid>
-                            <Grid item xs={6} sm={4} md={3}>
-                                <ActionTile title="View History" href="/history" icon={<historyIcon.type />} color="#0ea5e9" />
-                            </Grid>
-                            <Grid item xs={6} sm={4} md={3}>
-                                <ActionTile title="Support" href="/support" icon={<supportIcon.type />} color="#64748b" />
-                            </Grid>
-                        </Grid>
-                    </Box>
-
-                    {/* Recommendations */}
-                    <Box>
-                        <Typography variant="h5" fontWeight="bold" sx={{ mb: 3 }}>For You</Typography>
-                        <Card elevation={0} sx={{ border: '1px solid #e2e8f0', borderRadius: 3, p: 3 }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                                <Box sx={{
-                                    width: 80, height: 80,
-                                    bgcolor: '#eff6ff',
-                                    borderRadius: 4,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontSize: '2.5rem'
-                                }}>
-                                    🎉
-                                </Box>
-                                <Box sx={{ flexGrow: 1 }}>
-                                    <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 0.5 }}>
-                                        <Typography variant="h6" fontWeight="bold">Exclusive Member Deal</Typography>
-                                        <Chip label="New" size="small" color="primary" sx={{ height: 20, fontSize: '0.625rem' }} />
-                                    </Box>
-                                    <Typography variant="body1" color="text.secondary">Double points on all coffee purchases this weekend! Don't miss out on this limited time offer.</Typography>
-                                </Box>
-                                <Button component={Link} href="/promotions" variant="contained" size="large" sx={{ borderRadius: 2, px: 4 }}>
-                                    Activate
-                                </Button>
-                            </Box>
-                        </Card>
-                    </Box>
-                </Grid>
-            </Grid>
+            <Paper elevation={0} sx={{ borderRadius: 4, p: 3, border: '1px solid', borderColor: 'divider' }}>
+                <Stack direction={{ xs: 'column', md: 'row' }} spacing={3} alignItems="center" justifyContent="space-between">
+                    <Stack spacing={1}>
+                        <Typography variant="h6" fontWeight={700}>
+                            Keep your streak alive
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            {profile.currentStreak
+                                ? `You’ve checked in ${profile.currentStreak} day${profile.currentStreak === 1 ? '' : 's'} in a row.`
+                                : 'Visit us today to start earning daily streak bonuses.'}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                            Last visit: {lastVisitLabel}
+                        </Typography>
+                    </Stack>
+                    <Tooltip title="Open your history to keep the momentum going" arrow>
+                        <Button component={Link} href="/history" variant="contained" color="primary">
+                            Continue earning
+                        </Button>
+                    </Tooltip>
+                </Stack>
+            </Paper>
         </Box>
     );
 }
