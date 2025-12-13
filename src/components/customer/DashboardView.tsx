@@ -198,7 +198,7 @@ export default function DashboardView({ user, profile, recentActivity, featuredR
                             display: 'flex',
                             flexDirection: 'column',
                             justifyContent: 'space-between',
-                            minHeight: { xs: 200, md: 185 },
+                            height: 310,
                             width: '100%',
                         }}
                     >
@@ -225,7 +225,7 @@ export default function DashboardView({ user, profile, recentActivity, featuredR
                             </Stack>
 
                             <Typography variant="h4" fontWeight={700} sx={{ maxWidth: 420, lineHeight: 1.35 }}>
-                                Welcome back, {friendlyName}. Here’s a quick look at your loyalty journey today.
+                                Welcome back, {friendlyName}.
                             </Typography>
 
                             <Stack spacing={1.5}>

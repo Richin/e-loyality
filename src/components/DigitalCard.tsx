@@ -87,7 +87,8 @@ export default function DigitalCard({ name, memberId, tier, points }: DigitalCar
                     backgroundImage: theme.gradient,
                     boxShadow: `0 24px 48px -20px ${theme.shadow}`,
                     overflow: 'hidden',
-                    minHeight: { xs: 200, md: 185 },
+                    //nHeight: { xs: 200, md: 185 },
+                    height: 310,
                     display: 'flex',
                     flexDirection: 'column',
                     gap: 2,
@@ -102,20 +103,22 @@ export default function DigitalCard({ name, memberId, tier, points }: DigitalCar
                     }}
                 />
 
-                <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ position: 'relative' }}>
-                    <Box>
-                        <Typography variant="caption" sx={{ textTransform: 'uppercase', letterSpacing: 2, opacity: 0.7 }}>
+                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ position: 'relative' }}>
+                    <Stack spacing={0.5}>
+                        <Typography variant="caption" sx={{ textTransform: 'uppercase', letterSpacing: 1.5, opacity: 0.7 }}>
                             Loyalty Tier
                         </Typography>
-                        <Typography variant="h6" fontWeight={700}>
-                            {tier}
-                        </Typography>
-                    </Box>
+                        <Stack direction="row" alignItems="center" spacing={1}>
+                            <Typography variant="h6" fontWeight={700}>
+                                {tier}
+                            </Typography>
+                        </Stack>
+                    </Stack>
                     <Box
                         sx={{
-                            width: 56,
-                            height: 40,
-                            borderRadius: 2,
+                            width: 48,
+                            height: 32,
+                            borderRadius: 1.5,
                             background: alpha('#fef3c7', 0.6),
                             border: `1px solid ${alpha('#000', 0.1)}`,
                             position: 'relative',
@@ -127,59 +130,52 @@ export default function DigitalCard({ name, memberId, tier, points }: DigitalCar
                     </Box>
                 </Stack>
 
-                <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ xs: 'flex-start', sm: 'center' }} justifyContent="space-between" spacing={3} sx={{ position: 'relative' }}>
-                    <Box>
-                        <Typography variant="caption" sx={{ textTransform: 'uppercase', letterSpacing: 1.5, opacity: 0.6 }}>
-                            Card holder
-                        </Typography>
-                        <Typography variant="h5" fontWeight={700} sx={{ letterSpacing: 1, textTransform: 'uppercase' }}>
-                            {name}
-                        </Typography>
-                        <Typography variant="caption" sx={{ textTransform: 'uppercase', letterSpacing: 1.5, opacity: 0.6, display: 'block', mt: 2 }}>
-                            Member ID
-                        </Typography>
-                        <Typography variant="subtitle1" fontWeight={600} sx={{ letterSpacing: 2, fontFamily: 'monospace' }}>
-                            {formattedMemberId}
-                        </Typography>
-                    </Box>
+                <Stack direction="row" alignItems="flex-end" justifyContent="space-between" spacing={2} sx={{ position: 'relative', flexGrow: 1 }}>
+                    <Stack spacing={1.5} sx={{ mb: 1 }}>
+                        <Box>
+                            <Typography variant="caption" sx={{ textTransform: 'uppercase', letterSpacing: 1, opacity: 0.6, display: 'block', mb: 0.5 }}>
+                                Member
+                            </Typography>
+                            <Typography variant="h6" fontWeight={700} sx={{ letterSpacing: 0.5, textTransform: 'uppercase', lineHeight: 1.2 }}>
+                                {name}
+                            </Typography>
+                        </Box>
+
+                        <Box>
+                            <Typography variant="caption" sx={{ textTransform: 'uppercase', letterSpacing: 1.5, opacity: 0.5 }}>
+                                Balance
+                            </Typography>
+                            <Typography variant="h4" fontWeight={800} sx={{ lineHeight: 1 }}>
+                                {points.toLocaleString()}
+                            </Typography>
+                        </Box>
+                    </Stack>
 
                     <Box
                         sx={{
                             bgcolor: alpha(theme.accent, 0.9),
-                            borderRadius: 4,
+                            borderRadius: 3,
                             p: 1.5,
                             display: 'flex',
                             flexDirection: 'column',
                             alignItems: 'center',
-                            gap: 1,
+                            gap: 0.5,
                         }}
                     >
-                        <QRCodeSVG value={memberId} size={96} />
-                        <Typography variant="caption" sx={{ textTransform: 'uppercase', letterSpacing: 1.6, color: theme.on }}>
-                            Scan for perks
+                        <QRCodeSVG value={memberId} size={80} />
+                        <Typography variant="caption" sx={{ textTransform: 'uppercase', letterSpacing: 1, color: theme.on, fontSize: '0.65rem' }}>
+                            Scan
                         </Typography>
                     </Box>
                 </Stack>
 
-                <Divider flexItem sx={{ borderColor: alpha(theme.on, 0.2) }} />
-
-                <Stack direction="row" justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} sx={{ position: 'relative' }}>
-                    <Box>
-                        <Typography variant="caption" sx={{ textTransform: 'uppercase', letterSpacing: 1.5, opacity: 0.6 }}>
-                            Points balance
-                        </Typography>
-                        <Typography variant="h4" fontWeight={800}>
-                            {points.toLocaleString()} pts
-                        </Typography>
-                    </Box>
-                    <Box sx={{ textAlign: 'right' }}>
-                        <Typography variant="caption" sx={{ textTransform: 'uppercase', letterSpacing: 1.5, opacity: 0.6 }}>
-                            Customer care
-                        </Typography>
-                        <Typography variant="subtitle2" fontWeight={600}>
-                            loyalty@e-loyalty.app
-                        </Typography>
-                    </Box>
+                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ position: 'relative', mt: 'auto', pt: 1, borderTop: `1px solid ${alpha(theme.on, 0.15)}` }}>
+                    <Typography variant="caption" sx={{ letterSpacing: 2, fontFamily: 'monospace', opacity: 0.8 }}>
+                        {formattedMemberId}
+                    </Typography>
+                    <Typography variant="caption" sx={{ opacity: 0.6, letterSpacing: 1 }}>
+                        E-LOYALTY
+                    </Typography>
                 </Stack>
             </Box>
 
